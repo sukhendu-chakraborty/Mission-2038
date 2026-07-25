@@ -16,31 +16,19 @@ export default function LoadingScreen({ onComplete }) {
 
       tl.from(".who", {
         opacity: 0,
-        y: 80,
-        duration: 1,
+        y: 50,
+        duration: 0.5,
         ease: "power4.out",
       })
         .to(".who", {
           opacity: 0,
-          y: -60,
-          duration: 0.7,
-          delay: 0.6,
-        })
-        .from(".champions", {
-          opacity: 0,
-          y: 100,
-          scale: 0.8,
-          duration: 1.2,
-          ease: "power4.out",
-        })
-        .to(".champions", {
-          letterSpacing: "0.35em",
-          duration: 0.8,
+          y: -30,
+          duration: 0.4,
+          delay: 0.3,
         })
         .to(root.current, {
           opacity: 0,
-          duration: 0.9,
-          delay: 0.8,
+          duration: 0.4,
           pointerEvents: "none",
         });
     }, root);
@@ -58,10 +46,6 @@ export default function LoadingScreen({ onComplete }) {
       <div className="relative text-center">
         <p className="who text-5xl md:text-7xl xl:text-8xl font-black uppercase tracking-tight text-white">
           SELECT YOUR ROLE
-        </p>
-
-        <p className="champions absolute inset-0 flex items-center justify-center text-5xl md:text-7xl xl:text-8xl font-black uppercase tracking-tight text-yellow-400 opacity-0">
-          MISSION 2K38.
         </p>
       </div>
     </div>
