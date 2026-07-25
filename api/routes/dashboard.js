@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User, Profile, Video, Analysis, Trial, Tournament, ScoutRating, ScoutReport } = require('../models');
+const { User, Profile, Video, Analysis, Trial, Tournament, ScoutRating, ScoutReport, Notification } = require('../models');
 
 // AUTHENTICATION MIDDLEWARE FOR SECURE ROUTES
 const authenticateToken = (req, res, next) => {
@@ -447,17 +447,43 @@ router.get('/scout/reports', authenticateToken, async (req, res) => {
     const trialMap = {};
     trials.forEach(t => { trialMap[t._id.toString()] = t; });
 
-    // Map existing ScoutRatings to report format if not already in reports
-    const reportSet = new Set(reports.map(r => `${r.scout?._id || r.scout}_${r.player?._id || r.player}_${r.matchEvent}`));
+    // Map existing ScoutReports and ScoutRatings to prevent duplicate card rendering
+    const rawReports = reports.map(r => typeof r.toObject === 'function' ? r.toObject() : r);
+    const seenEvaluationKeys = new Set();
+    const combinedReports = [];
 
-    const combinedReports = [...reports.map(r => typeof r.toObject === 'function' ? r.toObject() : r)];
+    // 1. Add primary ScoutReports
+    for (const rep of rawReports) {
+      const sId = (rep.scout?._id || rep.scout || '').toString();
+      const pId = (rep.player?._id || rep.player || '').toString();
+      const event = (rep.matchEvent || '').trim().toLowerCase();
+      const score = rep.overallScore || 0;
 
+      const key = `${sId}_${pId}_${event}`;
+      const scoreKey = `${sId}_${pId}_${score}`;
+
+      if (!seenEvaluationKeys.has(key) && !seenEvaluationKeys.has(scoreKey)) {
+        seenEvaluationKeys.add(key);
+        seenEvaluationKeys.add(scoreKey);
+        combinedReports.push(rep);
+      }
+    }
+
+    // 2. Add ScoutRatings only if no matching ScoutReport exists for this trial/rating
     for (const r of ratings) {
       const trialDoc = r.trial ? (trialMap[r.trial._id?.toString() || r.trial?.toString()]) : null;
       const matchTitle = trialDoc?.title || 'Scouting Trial Match';
-      const key = `${r.scout?._id || r.scout}_${r.player?._id || r.player}_${matchTitle}`;
+      const sId = (r.scout?._id || r.scout || '').toString();
+      const pId = (r.player?._id || r.player || '').toString();
+      const score = r.scoutScore || 0;
+      const event = matchTitle.trim().toLowerCase();
 
-      if (!reportSet.has(key)) {
+      const key = `${sId}_${pId}_${event}`;
+      const scoreKey = `${sId}_${pId}_${score}`;
+
+      if (!seenEvaluationKeys.has(key) && !seenEvaluationKeys.has(scoreKey)) {
+        seenEvaluationKeys.add(key);
+        seenEvaluationKeys.add(scoreKey);
         combinedReports.push({
           _id: r._id,
           scout: r.scout,
@@ -467,10 +493,10 @@ router.get('/scout/reports', authenticateToken, async (req, res) => {
           date: r.updatedAt || r.createdAt,
           location: trialDoc?.location || 'Scouting Ground',
           tacticalRole: 'ST',
-          overallScore: r.scoutScore || 0,
+          overallScore: score,
           recommendation: r.recommendation || 'SHORTLIST_FOR_TRIAL',
           strengths: `Pace/Speed: ${r.speed || 0}, Passing: ${r.passing || 0}, Dribbling: ${r.dribbling || 0}, Shooting: ${r.shooting || 0}, Defending: ${r.defending || 0}, Physical: ${r.physical || 0}`,
-          verdict: `Official Trial Performance Rating of ${r.scoutScore || 0}/99 filed by Scout.`,
+          verdict: `Official Trial Performance Rating of ${score}/99 filed by Scout.`,
           scoutingVideo: r.scoutingVideo || '',
           createdAt: r.createdAt
         });
@@ -588,7 +614,7 @@ router.post('/scout/rate', authenticateToken, async (req, res) => {
 
     const query = trialId 
       ? { player: targetUser, scout: scoutUser, trial: trialId }
-      : { player: targetUser, scout: scoutUser };
+      : { player: targetUser, scout: scoutUser, $or: [{ trial: null }, { trial: { $exists: false } }] };
 
     const updateFields = {
       ...attrs,
@@ -598,13 +624,42 @@ router.post('/scout/rate', authenticateToken, async (req, res) => {
       recommendation: recommendation || 'SHORTLIST_FOR_TRIAL',
       scoutingVideo: scoutingVideo || ''
     };
-    if (trialId) updateFields.trial = trialId;
+    if (trialId) {
+      updateFields.trial = trialId;
+    } else {
+      updateFields.trial = null;
+    }
 
-    const ratingDoc = await ScoutRating.findOneAndUpdate(
-      query,
-      updateFields,
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    let ratingDoc;
+    try {
+      ratingDoc = await ScoutRating.findOneAndUpdate(
+        query,
+        updateFields,
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    } catch (dbErr) {
+      if (dbErr.code === 11000 || (dbErr.message && dbErr.message.includes('E11000'))) {
+        console.warn('[DB] Handled E11000 duplicate index error. Auto-repairing ScoutRating collection indexes.');
+        await ScoutRating.collection.dropIndex('player_1_scout_1').catch(() => {});
+        await ScoutRating.collection.dropIndex('player_1_scout_1_trial_1').catch(() => {});
+        await ScoutRating.collection.createIndex({ player: 1, scout: 1, trial: 1 }, { unique: true }).catch(() => {});
+
+        ratingDoc = await ScoutRating.findOneAndUpdate(
+          query,
+          updateFields,
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        ).catch(async () => {
+          const existing = await ScoutRating.findOne({ player: targetUser, scout: scoutUser, trial: trialId || null });
+          if (existing) {
+            Object.assign(existing, updateFields);
+            return await existing.save();
+          }
+          return await ScoutRating.create(updateFields);
+        });
+      } else {
+        throw dbErr;
+      }
+    }
 
     const updatedProfile = await recalculatePlayerRatings(targetUser);
 
@@ -642,17 +697,21 @@ router.post('/scout/rate', authenticateToken, async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // Send Notification to player
-    const scoutProfile = await Profile.findOne({ user: scoutUser });
-    const scoutName = scoutProfile?.name || 'A Verified Scout';
+    // Send Notification to player (safely caught)
+    try {
+      const scoutProfile = await Profile.findOne({ user: scoutUser });
+      const scoutName = scoutProfile?.name || 'A Verified Scout';
 
-    await Notification.create({
-      user: targetUser,
-      type: 'report',
-      title: '📋 New Official Scout Report!',
-      message: `${scoutName} has evaluated your trial performance in "${trialTitle}" with a Scout Rating of ${scoutScore}/99.`,
-      data: { reportId: reportDoc._id, scoutScore }
-    });
+      await Notification.create({
+        user: targetUser,
+        type: 'report',
+        title: '📋 New Official Scout Report!',
+        message: `${scoutName} has evaluated your trial performance in "${trialTitle}" with a Scout Rating of ${scoutScore}/99.`,
+        data: { reportId: reportDoc._id, scoutScore }
+      });
+    } catch (notifErr) {
+      console.warn('[Notification Warning] Could not dispatch player report notification:', notifErr.message);
+    }
 
     res.json({
       message: 'Scout rating saved and report propagated successfully!',

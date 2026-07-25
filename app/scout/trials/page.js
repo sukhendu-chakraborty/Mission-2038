@@ -153,15 +153,13 @@ export default function ScoutTrials() {
         trialId: trialId,
         ...scoringData
       });
-      setScoreSuccessMsg(`Trial Evaluation Saved! Score: ${res.scoutScore}/99. Removing trial card...`);
+      setScoreSuccessMsg(`Trial Evaluation Saved! Score: ${res.scoutScore}/99.`);
       
-      // Auto-delete trial card after rating submission as requested
-      setTimeout(async () => {
-        await handleDeleteTrial(trialId);
+      setTimeout(() => {
         setRatingModal(null);
         setScoreSuccessMsg(null);
         loadTrials();
-      }, 1200);
+      }, 1000);
     } catch (err) {
       console.error("Scout rate error:", err);
       alert("Failed to submit score: " + err.message);

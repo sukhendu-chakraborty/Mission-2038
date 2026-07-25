@@ -165,7 +165,7 @@ const FollowerSchema = new Schema({
 // 10. NOTIFICATION SCHEMA
 const NotificationSchema = new Schema({
   user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, enum: ['follow', 'comment', 'like', 'trial', 'message', 'alert'], required: true },
+  type: { type: String, enum: ['follow', 'comment', 'like', 'trial', 'message', 'alert', 'report', 'rating'], required: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
   data: { type: Schema.Types.Mixed },
@@ -233,6 +233,8 @@ const ScoutRatingSchema = new Schema({
   recommendation: { type: String, enum: ['SIGN_IMMEDIATELY', 'SHORTLIST_FOR_TRIAL', 'MONITOR_DEVELOPMENT', 'PASS'], default: 'SHORTLIST_FOR_TRIAL' },
   scoutingVideo: { type: String, default: '' }
 }, { timestamps: true });
+
+ScoutRatingSchema.index({ player: 1, scout: 1, trial: 1 }, { unique: true });
 
 // 15. SCOUT REPORT SCHEMA
 const ScoutReportSchema = new Schema({
