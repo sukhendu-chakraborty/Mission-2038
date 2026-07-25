@@ -7,6 +7,9 @@ import {
   Home, User, Video, TrendingUp, Trophy, Users,
   MessageSquare, Bell, Settings, LogOut, Search, BookOpen, ShieldAlert, FileText
 } from "lucide-react";
+import Image from "next/image";
+
+import { io as ioClient } from "socket.io-client";
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
@@ -20,6 +23,9 @@ export default function DashboardLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
+    let socket;
+    let pollInterval;
+
     if (typeof window !== "undefined") {
       const userStr = localStorage.getItem("user");
       const profileStr = localStorage.getItem("profile");
@@ -31,16 +37,58 @@ export default function DashboardLayout({ children }) {
 
       const parsedUser = JSON.parse(userStr);
       setCurrentUser(parsedUser);
-      if (profileStr) setCurrentProfile(JSON.parse(profileStr));
+      const rawUserId = parsedUser.id || parsedUser._id || parsedUser.userId || (parsedUser.user ? parsedUser.user.id || parsedUser.user._id : null);
+      const cleanUserId = typeof rawUserId === "object" ? (rawUserId._id || rawUserId.id)?.toString() : rawUserId?.toString();
 
-      // Fetch fresh notifications
-      api.get("/social/notifications")
-        .then(data => {
-          setNotifications(data);
-          setUnreadCount(data.filter(n => !n.read).length);
-        })
-        .catch(err => console.error("Error loading notifications:", err));
+      // 1. Initial Notification Load
+      const loadNotifications = () => {
+        api.get("/social/notifications")
+          .then(data => {
+            if (Array.isArray(data)) {
+              setNotifications(data);
+              setUnreadCount(data.filter(n => !n.read).length);
+            }
+          })
+          .catch(err => console.error("Error loading notifications:", err));
+      };
+
+      loadNotifications();
+
+      // 2. Real-Time Socket.io Connection & Listening
+      try {
+        socket = ioClient("http://localhost:5000", {
+          transports: ["websocket", "polling"],
+          reconnection: true
+        });
+
+        if (cleanUserId) {
+          socket.emit("join", cleanUserId);
+        }
+
+        socket.on("connect", () => {
+          if (cleanUserId) {
+            socket.emit("join", cleanUserId);
+          }
+        });
+
+        socket.on("notification:new", (newNotif) => {
+          setNotifications(prev => [newNotif, ...prev.filter(n => n._id !== newNotif._id)]);
+          setUnreadCount(prev => prev + 1);
+        });
+      } catch (sErr) {
+        console.warn("Socket.io connect notice:", sErr);
+      }
+
+      // 3. Fallback 5-second background sync
+      pollInterval = setInterval(() => {
+        loadNotifications();
+      }, 5000);
     }
+
+    return () => {
+      if (socket) socket.disconnect();
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [router]);
 
   const handleSignOut = () => {
@@ -118,8 +166,8 @@ export default function DashboardLayout({ children }) {
       {/* FIXED SIDEBAR FOR DESKTOP */}
       <aside className="hidden lg:flex flex-col w-72 h-screen fixed top-0 left-0 z-40 bg-zinc-950/90 border-r border-zinc-800/80 backdrop-blur-xl p-6 select-none">
         <div className="flex items-center space-x-3 mb-8 px-2 shrink-0">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 flex items-center justify-center font-black text-black text-xl shadow-[0_0_20px_rgba(250,204,21,0.35)]">
-            M
+          <div className="flex items-center justify-center">
+            <Image src="/logo.png" alt="Mission 2K38" width={40} height={40} className="object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-black tracking-widest text-white leading-none">
@@ -131,14 +179,19 @@ export default function DashboardLayout({ children }) {
           </div>
         </div>
 
-        {/* User Card */}
         <div className="mb-6 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 flex items-center space-x-3 shrink-0">
-          <div className="relative w-11 h-11 rounded-full overflow-hidden bg-zinc-800 border border-yellow-400/30">
-            <img
-              src={currentProfile?.profilePhoto || "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150"}
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
+          <div className="relative w-11 h-11 rounded-full overflow-hidden bg-zinc-800 border border-yellow-400/30 flex items-center justify-center">
+            {currentProfile?.profilePhoto ? (
+              <img
+                src={currentProfile.profilePhoto}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xl font-black uppercase text-yellow-400">
+                {(currentProfile?.name || currentUser.email).charAt(0)}
+              </span>
+            )}
           </div>
           <div className="overflow-hidden">
             <h4 className="text-sm font-bold text-white truncate">
@@ -151,7 +204,7 @@ export default function DashboardLayout({ children }) {
         </div>
 
         {/* Navigation links */}
-        <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto pr-1" data-lenis-prevent>
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
@@ -277,7 +330,7 @@ export default function DashboardLayout({ children }) {
                       Notifications ({unreadCount})
                     </h3>
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-zinc-900">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-zinc-900" data-lenis-prevent>
                     {notifications.length === 0 ? (
                       <div className="p-6 text-center text-zinc-500 text-xs">
                         No new notifications.
@@ -307,12 +360,18 @@ export default function DashboardLayout({ children }) {
               <span className="text-xs text-zinc-400">
                 Welcome, <strong className="text-white">{currentProfile?.name || currentUser.email.split('@')[0]}</strong>
               </span>
-              <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden border border-yellow-400/20">
-                <img
-                  src={currentProfile?.profilePhoto || "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150"}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden border border-yellow-400/20 flex items-center justify-center">
+                {currentProfile?.profilePhoto ? (
+                  <img
+                    src={currentProfile.profilePhoto}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-black uppercase text-yellow-400">
+                    {(currentProfile?.name || currentUser.email).charAt(0)}
+                  </span>
+                )}
               </div>
             </div>
           </div>

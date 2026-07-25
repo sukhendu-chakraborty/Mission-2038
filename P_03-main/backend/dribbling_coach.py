@@ -52,6 +52,37 @@ def analyze_dribbling(video_path, show_visuals=False):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         yield {"type": "result", "data": {"error": "Could not open video file."}}
+    # --- PRE-ANALYSIS POSE VERIFICATION LAYER ---
+    sample_cap = cv2.VideoCapture(video_path)
+    sampled = 0
+    pose_found = 0
+    while sample_cap.isOpened() and sampled < 25:
+        r_s, f_s = sample_cap.read()
+        if not r_s: break
+        sampled += 1
+        rgb_s = cv2.cvtColor(f_s, cv2.COLOR_BGR2RGB)
+        res_s = pose.process(rgb_s)
+        if res_s and res_s.pose_landmarks:
+            pose_found += 1
+    sample_cap.release()
+
+    if sampled > 0 and pose_found == 0:
+        yield {"type": "log", "data": "⛔ PRE-ANALYSIS REJECTED: Zero human athletic pose keypoints detected in initial video frames."}
+        yield {
+            "type": "result",
+            "data": {
+                "stats": {
+                    "validation_status": "NON_FOOTBALL_REJECTED",
+                    "football_action_confidence": "0%",
+                    "detected_pose_keypoints": "0 / 33",
+                    "overall_ai_rating": "10 / 100 (FAIL)"
+                },
+                "report": "⛔ REJECTED BEFORE ANALYSIS (AI Score: 10/100)\n\n" \
+                          "• Pre-analysis Validation Layer: Pre-scanned video sample and detected zero athletic player keypoints.\n" \
+                          "• Reason: The uploaded clip does not contain a recognizable football player executing athletic drills.\n\n" \
+                          "⚠️ Action Required: Please upload a valid football drill video for MediaPipe AI joint tracking."
+            }
+        }
         return
 
     while cap.isOpened():

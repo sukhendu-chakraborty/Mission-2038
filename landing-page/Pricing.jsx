@@ -24,6 +24,7 @@ gsap.registerPlugin(ScrollTrigger);
 export default function Pricing() {
     const containerRef = useRef(null);
     const phonesRef = useRef([]);
+    const tiltRefs = useRef([]);
     const [isAnnual, setIsAnnual] = useState(false);
 
     useGSAP(
@@ -41,10 +42,10 @@ export default function Pricing() {
                     },
                 });
 
-                // Side phones move up slower, middle phone moves up faster
-                tl.to(phonesRef.current[1], { y: -80, ease: "none" }, 0);
-                tl.to(phonesRef.current[0], { y: 20, ease: "none" }, 0);
-                tl.to(phonesRef.current[2], { y: 20, ease: "none" }, 0);
+                // Side phones move down slightly, middle phone moves up slightly
+                tl.to(phonesRef.current[1], { y: -45, ease: "none" }, 0);
+                tl.to(phonesRef.current[0], { y: 25, ease: "none" }, 0);
+                tl.to(phonesRef.current[2], { y: 25, ease: "none" }, 0);
             });
 
             // Entrance animation
@@ -63,6 +64,40 @@ export default function Pricing() {
         },
         { scope: containerRef }
     );
+
+    const handleMouseMove = (e, index) => {
+        const el = tiltRefs.current[index];
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        // Calculate rotation (-15 to 15 degrees)
+        const rotateX = ((y - centerY) / centerY) * -15; 
+        const rotateY = ((x - centerX) / centerX) * 15;
+
+        gsap.to(el, {
+            rotateX,
+            rotateY,
+            transformPerspective: 1200,
+            ease: "power3.out",
+            duration: 0.4
+        });
+    };
+
+    const handleMouseLeave = (index) => {
+        const el = tiltRefs.current[index];
+        if (!el) return;
+        gsap.to(el, {
+            rotateX: 0,
+            rotateY: 0,
+            ease: "power3.out",
+            duration: 0.7
+        });
+    };
 
     const plans = [
         {
@@ -91,7 +126,7 @@ export default function Pricing() {
         },
         {
             name: "Player Pro",
-            price: isAnnual ? "49.99" : "4.99",
+            price: isAnnual ? "4,999" : "499",
             period: isAnnual ? "/year" : "/month",
             description: "Advanced insights to accelerate your development.",
             features: [
@@ -108,7 +143,7 @@ export default function Pricing() {
         },
         {
             name: "Scout & Academy",
-            price: isAnnual ? "1990" : "199",
+            price: isAnnual ? "19,900" : "1,990",
             period: isAnnual ? "/year" : "/month",
             description: "Professional tools for talent identification and ranking.",
             features: [
@@ -136,7 +171,7 @@ export default function Pricing() {
 
                 <AnimatedTitle
                     containerClass="
-                mb-16
+                mb-8
                 mx-auto
                 max-w-[1500px]
                 text-center
@@ -154,16 +189,43 @@ export default function Pricing() {
                     {"Mission 2K38<br /> Elite Pricing"}
                 </AnimatedTitle>
 
+                {/* Global Toggle */}
+                <div className="flex flex-col items-center mb-10 z-20">
+                    <div className="flex bg-black/5 p-1 rounded-full border border-black/10 mb-2">
+                        <button
+                            onClick={() => setIsAnnual(false)}
+                            className={`${!isAnnual ? 'bg-[#FFD54A] text-black shadow-md' : 'text-black/60 hover:text-black'} px-6 py-2.5 rounded-full text-xs font-bold transition-all`}
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            onClick={() => setIsAnnual(true)}
+                            className={`${isAnnual ? 'bg-[#FFD54A] text-black shadow-md' : 'text-black/60 hover:text-black'} px-6 py-2.5 rounded-full text-xs font-bold transition-all`}
+                        >
+                            Annually
+                        </button>
+                    </div>
+                    <span className="text-[#FF8A00] text-[10px] font-bold border border-[#FF8A00]/50 rounded-full px-3 py-1 bg-[#FF8A00]/10">
+                        SAVE UP TO 20% WITH ANNUAL
+                    </span>
+                </div>
+
                 {/* Pricing Cards Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl items-start mt-10 pb-20">
                     {plans.map((plan, index) => (
                         <div
                             key={plan.name}
                             ref={(el) => (phonesRef.current[index] = el)}
-                            className="flex justify-center w-full"
+                            className={`flex justify-center w-full ${index === 1 ? 'md:-mt-3' : 'md:mt-3'}`}
+                            style={{ perspective: "1200px" }}
                         >
-                            <div className="w-[300px] sm:w-[320px] md:w-full max-w-[360px]">
-                                <Iphone className="w-full h-auto drop-shadow-2xl hover:-translate-y-2 transition-transform duration-500 ease-out">
+                            <div 
+                                className="w-[300px] sm:w-[320px] md:w-full max-w-[360px]"
+                                ref={(el) => (tiltRefs.current[index] = el)}
+                                onMouseMove={(e) => handleMouseMove(e, index)}
+                                onMouseLeave={() => handleMouseLeave(index)}
+                            >
+                                <Iphone className="w-full h-auto drop-shadow-2xl transition-shadow duration-500 hover:drop-shadow-[0_30px_60px_rgba(255,213,74,0.15)]">
                                     {/* Inside the phone content */}
                                     <div className="bg-[#050505] w-full h-full pt-14 pb-8 px-6 sm:px-8 flex flex-col relative text-white font-sans overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                                         <style>{`
@@ -173,25 +235,7 @@ export default function Pricing() {
                     `}</style>
                                         <div className="absolute inset-0 scrollbar-hide overflow-y-auto w-full h-full px-6 sm:px-7 pt-12 pb-8 flex flex-col">
 
-                                            {plan.hasToggle && (
-                                                <div className="flex flex-col items-center mb-6 shrink-0 relative z-10 pt-2">
-                                                    <div className="flex bg-white/10 rounded-full p-1 mb-2">
-                                                        <button
-                                                            onClick={() => setIsAnnual(false)}
-                                                            className={`${!isAnnual ? 'bg-[#FFD54A] text-black' : 'text-white hover:bg-white/5'} px-4 py-1.5 rounded-full text-[11px] font-bold transition-colors`}
-                                                        >
-                                                            Monthly
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setIsAnnual(true)}
-                                                            className={`${isAnnual ? 'bg-[#FFD54A] text-black' : 'text-white hover:bg-white/5'} px-4 py-1.5 rounded-full text-[11px] font-bold transition-colors`}
-                                                        >
-                                                            Annual
-                                                        </button>
-                                                    </div>
-                                                    <span className="text-[#FF8A00] text-[9px] font-bold border border-[#FF8A00]/50 rounded-full px-3 py-1 bg-[#FF8A00]/10">SAVE 20% WITH ANNUAL</span>
-                                                </div>
-                                            )}
+
 
                                             {!plan.hasToggle && plan.isPopular && (
                                                 <div className="flex justify-center mb-6 shrink-0 relative z-10 pt-2">
@@ -209,7 +253,7 @@ export default function Pricing() {
                                                 <h4 className="text-2xl font-bold mb-2">{plan.name}</h4>
                                                 <div className="flex items-baseline gap-1 mb-3">
                                                     <span className="text-4xl sm:text-5xl font-bold tracking-tight text-white">
-                                                        ${plan.price}
+                                                        ₹{plan.price}
                                                     </span>
                                                     <span className="text-xs text-white/50">{plan.period}</span>
                                                 </div>

@@ -1,3 +1,7 @@
+import os
+os.environ["GLOG_minloglevel"] = "3"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 import cv2
 import numpy as np
 
@@ -43,9 +47,13 @@ PoseLandmarkEnumMeta.PoseLandmark = PoseLandmarkEnumMeta
 class SafePoseDetector:
     def __init__(self):
         self.pose_instance = None
+        self.task_detector = None
         self.use_legacy = False
+        self.use_tasks = False
+        self.mp_pose = PoseLandmarkEnumMeta
         self.PoseLandmark = PoseLandmarkEnumMeta
         
+        # 1. Try legacy mp.solutions.pose (Python 3.10 - 3.12)
         try:
             import mediapipe as mp
             if hasattr(mp, 'solutions') and hasattr(mp.solutions, 'pose'):
@@ -53,12 +61,38 @@ class SafePoseDetector:
                 self.PoseLandmark = self.mp_pose.PoseLandmark
                 self.pose_instance = self.mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
                 self.use_legacy = True
-            else:
-                self.mp_pose = PoseLandmarkEnumMeta
-                self.PoseLandmark = PoseLandmarkEnumMeta
-        except Exception:
-            self.mp_pose = PoseLandmarkEnumMeta
-            self.PoseLandmark = PoseLandmarkEnumMeta
+                print("[SafePoseDetector] Using legacy mediapipe.solutions.pose")
+        except Exception as e:
+            print(f"[SafePoseDetector] Legacy pose initialization skipped: {e}")
+
+        # 2. Try MediaPipe Tasks PoseLandmarker (Python 3.13+)
+        if not self.use_legacy:
+            try:
+                import mediapipe as mp
+                from mediapipe.tasks import python
+                from mediapipe.tasks.python import vision
+                import os
+                import urllib.request
+
+                backend_dir = os.path.dirname(os.path.abspath(__file__))
+                model_path = os.path.join(backend_dir, 'pose_landmarker_lite.task')
+                if not os.path.exists(model_path):
+                    print("[SafePoseDetector] Downloading pose_landmarker_lite.task...")
+                    url = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task'
+                    urllib.request.urlretrieve(url, model_path)
+                    print("[SafePoseDetector] Download complete!")
+
+                base_options = python.BaseOptions(model_asset_path=model_path)
+                options = vision.PoseLandmarkerOptions(
+                    base_options=base_options,
+                    running_mode=vision.RunningMode.IMAGE
+                )
+                self.task_detector = vision.PoseLandmarker.create_from_options(options)
+                self.use_tasks = True
+                self.mp_module = mp
+                print("[SafePoseDetector] Successfully initialized MediaPipe Tasks PoseLandmarker!")
+            except Exception as e:
+                print(f"[SafePoseDetector] MediaPipe Tasks initialization error: {e}")
 
     def process(self, image):
         if self.use_legacy and self.pose_instance:
@@ -69,16 +103,20 @@ class SafePoseDetector:
             except Exception:
                 pass
 
-        # Fallback simulation landmarks for Python 3.13 MediaPipe Tasks transition
-        h, w = image.shape[:2]
-        t = np.mean(image) % 100 / 100.0
-        
-        landmarks = [Landmark(x=0.5, y=0.5) for _ in range(33)]
-        landmarks[23] = Landmark(x=0.45, y=0.5)
-        landmarks[24] = Landmark(x=0.55, y=0.5)
-        landmarks[25] = Landmark(x=0.43 + t*0.05, y=0.7)
-        landmarks[26] = Landmark(x=0.57 - t*0.05, y=0.7)
-        return PoseResultsContainer(PoseLandmarksContainer(landmarks))
+        if self.use_tasks and self.task_detector:
+            try:
+                mp_image = self.mp_module.Image(
+                    image_format=self.mp_module.ImageFormat.SRGB, 
+                    data=image
+                )
+                res = self.task_detector.detect(mp_image)
+                if res and res.pose_landmarks and len(res.pose_landmarks) > 0:
+                    first_person = res.pose_landmarks[0]
+                    return PoseResultsContainer(PoseLandmarksContainer(first_person))
+            except Exception as e:
+                print(f"[SafePoseDetector] Tasks process error: {e}")
+
+        return PoseResultsContainer(None)
 
 POSE_CONNECTIONS = [
     (11, 12), (11, 13), (13, 15), (12, 14), (14, 16), # Shoulders & Arms
@@ -97,17 +135,16 @@ def draw_mediapipe_skeleton(frame, landmarks, w, h):
         px, py = int(lm.x * w), int(lm.y * h)
         points[idx] = (px, py)
 
-    # 1. Draw Skeleton Lines (Cyan for upper body, Neon Green for lower body)
+    # 1. Draw Skeleton Lines (Solid White)
     for p1_idx, p2_idx in POSE_CONNECTIONS:
         if p1_idx in points and p2_idx in points:
             pt1 = points[p1_idx]
             pt2 = points[p2_idx]
-            color = (255, 255, 0) if p1_idx < 23 else (0, 255, 0)
-            cv2.line(frame, pt1, pt2, color, 3, cv2.LINE_AA)
+            cv2.line(frame, pt1, pt2, (255, 255, 255), 2, cv2.LINE_AA)
 
-    # 2. Draw Key Joint Points (Gold dots with white outline)
+    # 2. Draw Key Joint Points (Solid Red dots with subtle outline)
     for idx, pt in points.items():
-        if idx in [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]:
-            cv2.circle(frame, pt, 5, (0, 215, 255), -1, cv2.LINE_AA)
-            cv2.circle(frame, pt, 6, (255, 255, 255), 1, cv2.LINE_AA)
+        if idx in [0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]:
+            cv2.circle(frame, pt, 5, (0, 0, 255), -1, cv2.LINE_AA)
+            cv2.circle(frame, pt, 5, (255, 255, 255), 1, cv2.LINE_AA)
 

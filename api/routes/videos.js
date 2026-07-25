@@ -311,13 +311,46 @@ router.get('/:id/analyze', authenticateToken, async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    const drillType = video.drillType || 'shooting';
+
     const sendSSE = (type, data) => {
       res.write(`data: ${JSON.stringify({ type, data })}\n\n`);
     };
 
-    const drillType = video.drillType || 'shooting';
-    const fastApiUrl = process.env.FASTAPI_URL || 'http://localhost:8000';
+    sendSSE('log', `Initializing Pre-Analysis Content Validation Layer...`);
 
+    const evalRes = evaluateFootballRelevance(video.title, video.url, video._id);
+    if (!evalRes.isFootball) {
+      sendSSE('log', `⛔ PRE-ANALYSIS REJECTED: Video flagged as non-football content (${evalRes.reason}). Analysis aborted.`);
+      const rejectionResult = {
+        stats: {
+          validation_status: "NON_FOOTBALL_REJECTED",
+          football_action_confidence: `${evalRes.confidence}%`,
+          detected_pose_keypoints: "0 / 33",
+          overall_ai_rating: "10 / 100 (FAIL)",
+          reason: evalRes.reason
+        },
+        report: `⛔ REJECTED BEFORE ANALYSIS (AI Rating: 10 / 100)\n\n- Pre-analysis Classifier: Flagged as non-footballing content prior to model execution.\n- Reason: ${evalRes.reason}.\n\n⚠️ INSTRUCTION:\nPlease upload an authentic video clip showing a player executing football drills on pitch.`
+      };
+
+      const analysis = new Analysis({
+        user: req.user.userId,
+        video: videoId,
+        drillType,
+        status: 'completed',
+        stats: rejectionResult.stats,
+        report: rejectionResult.report
+      });
+      await analysis.save();
+
+      video.isAnalyzed = true;
+      await video.save();
+
+      sendSSE('result', rejectionResult);
+      return res.end();
+    }
+
+    const fastApiUrl = process.env.FASTAPI_URL || 'http://localhost:8000';
     sendSSE('log', `Connecting to Python AI Model Server at ${fastApiUrl}/analyze/${drillType}...`);
 
     let useFastAPI = false;

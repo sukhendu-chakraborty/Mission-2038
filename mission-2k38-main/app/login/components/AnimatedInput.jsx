@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 export default function AnimatedInput({
   label,
@@ -8,19 +10,34 @@ export default function AnimatedInput({
   value,
   onChange,
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+  const inputType = isPassword ? (showPassword ? "text" : "password") : type;
+
   return (
     <div className="group relative w-full">
       <label className="mb-2 block text-xs uppercase tracking-[0.35em] text-zinc-500">
         {label}
       </label>
 
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={label}
-        className="peer w-full bg-transparent pb-4 text-lg text-white outline-none placeholder:text-zinc-600"
-      />
+      <div className="relative">
+        <input
+          type={inputType}
+          value={value}
+          onChange={onChange}
+          placeholder={label}
+          className="peer w-full bg-transparent pb-4 pr-8 text-lg text-white outline-none placeholder:text-zinc-600"
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-0 top-0 text-zinc-500 hover:text-white transition-colors"
+          >
+            {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+          </button>
+        )}
+      </div>
 
       <motion.div
         initial={{ scaleX: 0 }}

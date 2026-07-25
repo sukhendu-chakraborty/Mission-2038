@@ -5,6 +5,8 @@ import { api } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { MapPin, Trophy, Calendar, Users, Map, CheckCircle2, AlertCircle, Lock, Shield, Clock, Check } from "lucide-react";
 
+import { io as ioClient } from "socket.io-client";
+
 export default function PlayerTournaments() {
   const [activeTab, setActiveTab] = useState("trials"); // 'trials' | 'tournaments'
   const [trials, setTrials] = useState([]);
@@ -23,12 +25,47 @@ export default function PlayerTournaments() {
     { name: "Kolkata East", lat: 22.5726, lng: 88.3639 }
   ];
 
+  const loadTrialsSilent = () => {
+    api.get("/trials")
+      .then(res => {
+        if (Array.isArray(res)) setTrials(res);
+      })
+      .catch(err => console.error(err));
+  };
+
   useEffect(() => {
+    let socket;
+    let pollInterval;
+
+    if (typeof window !== "undefined") {
+      try {
+        socket = ioClient("http://localhost:5000", {
+          transports: ["websocket", "polling"],
+          reconnection: true
+        });
+
+        socket.on("notification:new", () => {
+          if (activeTab === "trials") loadTrialsSilent();
+        });
+      } catch (e) {
+        console.warn(e);
+      }
+
+      pollInterval = setInterval(() => {
+        if (activeTab === "trials") loadTrialsSilent();
+      }, 4000);
+    }
+
     if (activeTab === "trials") {
       loadTrials();
     } else {
       loadNearbyTournaments();
     }
+
+    return () => {
+      if (socket) socket.disconnect();
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [activeTab, gpsSim]);
 
   const loadTrials = () => {

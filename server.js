@@ -57,6 +57,27 @@ app.use((req, res) => {
 
 app.use(errorHandler);
 
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  }
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  socket.on('join', (userId) => {
+    if (userId) {
+      socket.join(`user_${userId}`);
+    }
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 connectDB()
@@ -65,13 +86,13 @@ connectDB()
       console.warn('[!] MongoDB connection failed. Server running in degraded mode.');
     }
 
-    app.listen(PORT, () => {
-      console.log(`[✓] Express backend running on port ${PORT}`);
+    server.listen(PORT, () => {
+      console.log(`[✓] Express backend + Socket.io running on port ${PORT}`);
     });
   })
   .catch((error) => {
     console.error('[✗] Unexpected error while connecting to MongoDB:', error);
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`[✓] Express backend running on port ${PORT} (DB disconnected)`);
     });
   });
