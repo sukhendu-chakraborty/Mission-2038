@@ -145,11 +145,6 @@ function RegisterContent() {
         </div>
 
         <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-6 md:p-10 shadow-2xl">
-          {error && (
-            <div className="mb-6 p-4 rounded bg-red-950/40 border border-red-500/50 text-red-200 text-sm">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleRegister} className="space-y-8">
             {/* SECTION 1: COMMON CORE DETAILS */}
@@ -587,6 +582,12 @@ function RegisterContent() {
                 {loading ? "Registering..." : "Submit Application"}
               </button>
             </div>
+
+            {error && (
+              <div className="mt-4 p-4 rounded-xl bg-red-950/50 border border-red-500/50 text-red-200 text-sm text-center font-medium shadow-lg">
+                {error}
+              </div>
+            )}
           </form>
         </div>
       </div>
