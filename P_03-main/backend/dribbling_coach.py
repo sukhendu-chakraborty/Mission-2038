@@ -23,8 +23,16 @@ if API_KEY and genai:
     except Exception as e:
         print(f"[X] Gemini Error: {e}")
 
+def load_yolo_model():
+    custom_weights = os.getenv("CUSTOM_YOLO_WEIGHTS")
+    if custom_weights and os.path.exists(custom_weights):
+        print(f"[✓] Loading custom-trained YOLO weights from: {custom_weights}")
+        return YOLO(custom_weights)
+    print("[!] Loading default 'yolov8n.pt'")
+    return YOLO('yolov8n.pt')
+
 print("Loading Models...")
-yolo_model = YOLO('yolov8n.pt') 
+yolo_model = load_yolo_model() 
 
 from pose_helper import SafePoseDetector, draw_mediapipe_skeleton
 

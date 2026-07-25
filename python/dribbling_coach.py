@@ -18,11 +18,25 @@ except Exception as e:
     print(f"[X] Gemini Error: {e}")
     client = None
 
+def load_yolo_model():
+    custom_weights = os.getenv("CUSTOM_YOLO_WEIGHTS")
+    if custom_weights and os.path.exists(custom_weights):
+        print(f"[✓] Loading custom-trained YOLO weights from: {custom_weights}")
+        return YOLO(custom_weights)
+    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    default_weights_path = os.path.join(project_root, 'models', 'yolov8n.pt')
+    
+    if os.path.exists(default_weights_path):
+        print(f"[!] Custom weights not found or invalid. Loading default model from: {default_weights_path}")
+        return YOLO(default_weights_path)
+    
+    print("[!] Loading default 'yolov8n.pt'")
+    return YOLO('yolov8n.pt')
+
 print("Loading Models...")
-script_dir = os.path.dirname(os.path.abspath(__file__))
-models_dir = os.path.join(os.path.dirname(script_dir), 'models')
-yolo_model_path = os.path.join(models_dir, 'yolov8n.pt')
-yolo_model = YOLO(yolo_model_path)
+yolo_model = load_yolo_model()
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
