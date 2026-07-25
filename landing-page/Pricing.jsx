@@ -42,10 +42,10 @@ export default function Pricing() {
                     },
                 });
 
-                // Side phones move down, middle phone moves up significantly
-                tl.to(phonesRef.current[1], { y: -200, ease: "none" }, 0);
-                tl.to(phonesRef.current[0], { y: 100, ease: "none" }, 0);
-                tl.to(phonesRef.current[2], { y: 100, ease: "none" }, 0);
+                // Side phones move down slightly, middle phone moves up slightly
+                tl.to(phonesRef.current[1], { y: -45, ease: "none" }, 0);
+                tl.to(phonesRef.current[0], { y: 25, ease: "none" }, 0);
+                tl.to(phonesRef.current[2], { y: 25, ease: "none" }, 0);
             });
 
             // Entrance animation
@@ -216,7 +216,7 @@ export default function Pricing() {
                         <div
                             key={plan.name}
                             ref={(el) => (phonesRef.current[index] = el)}
-                            className={`flex justify-center w-full ${index === 1 ? 'md:-mt-12' : 'md:mt-12'}`}
+                            className={`flex justify-center w-full ${index === 1 ? 'md:-mt-3' : 'md:mt-3'}`}
                             style={{ perspective: "1200px" }}
                         >
                             <div 

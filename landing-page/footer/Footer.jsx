@@ -157,9 +157,18 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FaArrowRight } from "react-icons/fa";
+import { FaInstagram, FaXTwitter, FaLinkedin } from "react-icons/fa6";
+import { Mail } from "lucide-react";
 import CursorGrid from "@/components/ui/CursorGrid";
 
 gsap.registerPlugin(ScrollTrigger);
+
+const socialLinks = [
+  { icon: FaInstagram, href: "https://www.instagram.com/__algo.rhythm__?igsh=bHg3dDRrcm1xMGlz", label: "Instagram" },
+  { icon: FaXTwitter, href: "https://x.com/algo_rhythm_onX", label: "X" },
+  { icon: FaLinkedin, href: "https://www.linkedin.com/company/algo-rhythm006/", label: "LinkedIn" },
+  { icon: Mail, href: "mailto:algorhythm006@gmail.com", label: "Email" }
+];
 
 const Footer = () => {
     const footerRef = useRef(null);
@@ -261,7 +270,7 @@ const Footer = () => {
 
                     {/* Overlay Button */}
                     <button
-                        onClick={() => window.open("mailto:05rajprithvi@gmail.com")}
+                        onClick={() => window.open("mailto:algorhythm006@gmail.com")}
                         className="footer-contact-btn absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-4 bg-black border-2 border-white/20 rounded-full pl-6 md:pl-10 pr-2 py-2 group hover:border-yellow-400 transition-colors z-20 cursor-pointer"
                     >
                         <span className="text-xl md:text-4xl font-light tracking-wide uppercase">
@@ -293,6 +302,8 @@ const Footer = () => {
                     </a>
                 </div>
             </div>
+
+
 
             {/* Bottom Section */}
             <div className="relative z-10 w-full mt-8 grid grid-cols-1 md:grid-cols-2">
@@ -330,15 +341,21 @@ const Footer = () => {
                 </div>
 
                 <div className="flex flex-wrap justify-center gap-3 md:gap-4">
-                    {["Behance", "LinkedIn", "Instagram", "X"].map((social) => (
-                        <a
-                            key={social}
-                            href="#"
-                            className="border border-white/30 rounded-full px-4 md:px-6 py-2 hover:bg-white hover:text-black transition-colors"
-                        >
-                            {social}
-                        </a>
-                    ))}
+                    {socialLinks.map((social) => {
+                        const Icon = social.icon;
+                        return (
+                            <a
+                                key={social.label}
+                                href={social.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 border border-white/30 rounded-full px-4 md:px-6 py-2 hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-all font-semibold"
+                            >
+                                <Icon size={16} />
+                                <span>{social.label}</span>
+                            </a>
+                        );
+                    })}
                 </div>
 
                 <p>
