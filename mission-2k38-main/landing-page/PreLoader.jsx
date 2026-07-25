@@ -83,7 +83,7 @@ const Preloader = ({ isLoading, setIsLoading }) => {
                 <FlipFadeText
                     words={["WHO ARE WE?"]}
                     interval={99999}
-                    textClassName="text-white font-black tracking-tight text-[clamp(3rem,10vw,8rem)]"
+                    textClassName="uppercase font-black text-5xl sm:text-6xl md:text-7xl lg:text-[8rem] leading-[0.9] tracking-[-0.05em] text-white"
                     className="min-h-0"
                     letterDuration={0.5}
                     staggerDelay={0.07}
@@ -91,11 +91,12 @@ const Preloader = ({ isLoading, setIsLoading }) => {
                 />
 
                 {/* Progress bar */}
-                <div className="mt-8 w-40 h-[2px] bg-white/10 rounded-full overflow-hidden">
+                <div className="mt-12 w-64 h-1 bg-white/10 rounded-full overflow-hidden relative shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                     <div
-                        className="h-full bg-white/60 rounded-full"
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-400 via-white to-yellow-400 rounded-full"
                         style={{
-                            animation: "loaderBar 2s ease-in-out forwards",
+                            animation: "loaderBar 2s cubic-bezier(0.85, 0, 0.15, 1) forwards",
+                            boxShadow: "0 0 20px rgba(250, 204, 21, 0.6)",
                         }}
                     />
                 </div>
@@ -118,7 +119,7 @@ const Preloader = ({ isLoading, setIsLoading }) => {
                 <FlipFadeText
                     words={["CHAMPIONS"]}
                     interval={99999}
-                    textClassName="text-white font-black tracking-widest text-[clamp(3.5rem,12vw,10rem)]"
+                    textClassName="uppercase font-black text-5xl sm:text-6xl md:text-7xl lg:text-[8rem] leading-[0.9] tracking-[-0.05em] text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.4)]"
                     className="min-h-0"
                     letterDuration={0.6}
                     staggerDelay={0.08}

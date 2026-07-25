@@ -58,28 +58,38 @@ function FadeIn({
 const history = [
     {
         number: '01',
-        name: '3D Modeling',
-        description: 'Creation of detailed objects, characters, or environments tailored to specific client needs, ideal for games, products, and visualizations.',
+        name: 'Inaugural Asian Games Gold (1951)',
+        description: 'India won the first-ever football gold medal at the inaugural Asian Games hosted in New Delhi, defeating Iran 1–0 in the final.',
     },
     {
         number: '02',
-        name: 'Rendering',
-        description: 'High-quality, photorealistic renders that showcase designs with custom lighting, textures, and materials to bring concepts to life.',
+        name: 'Olympic Semi-Finalists (1956)',
+        description: 'The Blue Tigers achieved their greatest global feat by finishing fourth at the Melbourne Summer Olympics, highlighted by Neville D Souza becoming the first Asian player to score an Olympic hat-trick.',
     },
     {
         number: '03',
-        name: 'Motion Design',
-        description: 'Dynamic animations and motion graphics that add energy and storytelling to brands, products, and digital experiences.',
+        name: 'Second Asian Games Gold (1962)',
+        description: 'Under coach Syed Abdul Rahim, India claimed its second continental gold medal by defeating powerhouse South Korea 2–1 in the Jakarta final amidst intense pressure.',
     },
     {
         number: '04',
-        name: 'Branding',
-        description: 'Crafting cohesive visual identities — from logos to full brand systems — that communicate a clear and memorable presence.',
+        name: 'AFC Asian Cup Runners-Up (1964)',
+        description: 'In their maiden appearance at the continental championship hosted in Israel, India finished as runners-up in a round-robin format, securing their highest-ever finish.',
     },
     {
         number: '05',
-        name: 'Web Design',
-        description: 'Designing clean, modern, and conversion-focused websites with attention to layout, typography, and user experience.',
+        name: 'AFC Challenge Cup Triumph (2008)',
+        description: 'Sparking a modern revival under coach Bob Houghton, India won the 2008 AFC Challenge Cup in Hyderabad—powered by a Sunil Chhetri hat-trick in the final—to end a 27-year absence from the AFC Asian Cup.',
+    },
+    {
+        number: '06',
+        name: 'Record 9th SAFF Championship Victory (2023)',
+        description: 'Cementing regional dominance, India captured their 9th SAFF Championship title by edging out guest team Kuwait in a dramatic penalty shootout at Sree Kanteerava Stadium.',
+    },
+    {
+        number: '07',
+        name: 'Minerva Academy Stuns Liverpool 6–0 (2026)',
+        description: 'Minerva Academy U-15 side delivered a historic performance by thrashing Liverpool FC youth team 6–0 at the Mediterranean International Cup in Spain, showcasing the immense potential of Indian grassroots football.',
     },
 ];
 

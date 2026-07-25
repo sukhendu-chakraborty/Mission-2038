@@ -121,25 +121,27 @@ async function formatProfileSkills(profile) {
   const pObj = profile.toObject ? profile.toObject() : profile;
   if (pObj.user && (pObj.user.role === 'player' || !pObj.user.role)) {
     const ratingsCount = await ScoutRating.countDocuments({ player: pObj.user._id || pObj.user });
+    pObj.skills = pObj.skills || {};
+    pObj.skills.scoutRatingsCount = ratingsCount;
+
     if (ratingsCount === 0) {
-      pObj.skills = {
-        speed: 0,
-        passing: 0,
-        dribbling: 0,
-        finishing: 0,
-        shooting: 0,
-        defending: 0,
-        physical: 0,
-        vision: 0,
-        stamina: 0,
-        aiScore: 0,
-        scoutScore: 0,
-        potential: 0,
-        scoutRatingsCount: 0
-      };
+      pObj.skills.scoutScore = 0;
+      pObj.skills.overallScore = 0;
+      pObj.skills.speed = 0;
+      pObj.skills.passing = 0;
+      pObj.skills.dribbling = 0;
+      pObj.skills.finishing = 0;
+      pObj.skills.shooting = 0;
+      pObj.skills.defending = 0;
+      pObj.skills.physical = 0;
+      pObj.skills.vision = 0;
+      pObj.skills.stamina = 0;
+      pObj.skills.potential = 0;
     } else {
-      pObj.skills = pObj.skills || {};
-      pObj.skills.scoutRatingsCount = ratingsCount;
+      const pos = pObj.preferredPosition || 'ST';
+      let score = Number(pObj.skills.scoutScore) || Number(pObj.skills.aiScore) || calculateScoutScore(pObj.skills, pos);
+      pObj.skills.scoutScore = score;
+      pObj.skills.overallScore = score;
     }
   }
   return pObj;
@@ -234,17 +236,83 @@ router.put('/profile', authenticateToken, async (req, res) => {
   }
 });
 
-// 4. LEADERBOARD
-router.get('/leaderboard', async (req, res) => {
+// 4. GLOBAL PLAYER RANKINGS LEADERBOARD
+router.get('/leaderboard', authenticateToken, async (req, res) => {
   try {
-    const topPlayers = await Profile.find({ 'skills.potential': { $exists: true } })
-      .populate('user', 'email role')
-      .sort({ 'skills.aiScore': -1, 'skills.potential': -1 })
-      .limit(20);
+    const currentUserId = (req.user?.userId || req.user?.id || req.userId)?.toString();
 
-    const mapped = topPlayers.filter(p => p.user && p.user.role === 'player');
-    res.json(mapped);
+    // Fetch all profiles populated with user role
+    const profiles = await Profile.find({}).populate('user', 'role email');
+
+    // Filter player profiles safely (exclude scouts, coaches, admins)
+    const playerProfiles = profiles.filter(p => {
+      if (!p.user) return false;
+      const role = typeof p.user === 'object' ? p.user.role : null;
+      if (role === 'scout' || role === 'coach' || role === 'admin') return false;
+      return true;
+    });
+
+    // Format profiles and calculate ratings
+    const rankedPlayers = await Promise.all(playerProfiles.map(async p => {
+      const formatted = await formatProfileSkills(p);
+      const attrs = formatted.skills || {};
+      const pos = formatted.preferredPosition || 'ST';
+      const ratingsCount = attrs.scoutRatingsCount || 0;
+
+      // Unscouted players (0 ratings) have overall score 0
+      const overall = ratingsCount > 0 ? (Number(attrs.scoutScore) || Number(attrs.overallScore) || 0) : 0;
+
+      return {
+        _id: formatted._id,
+        user: formatted.user._id || formatted.user,
+        name: formatted.name || 'Anonymous Player',
+        email: formatted.user?.email || '',
+        preferredPosition: pos,
+        ageCategory: formatted.ageCategory || 'Senior',
+        city: formatted.city || 'India',
+        state: formatted.state || '',
+        currentClub: formatted.currentClub || 'Grassroots FC',
+        profilePhoto: formatted.profilePhoto || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150',
+        overallScore: overall,
+        scoutRatingsCount: ratingsCount,
+        skills: {
+          speed: attrs.speed || 0,
+          passing: attrs.passing || 0,
+          dribbling: attrs.dribbling || 0,
+          shooting: attrs.shooting || attrs.finishing || 0,
+          defending: attrs.defending || 0,
+          physical: attrs.physical || attrs.stamina || 0
+        },
+        verifiedBadge: !!formatted.verifiedBadge
+      };
+    }));
+
+    // Sort strictly descending by overallScore (highest scouted score at top)
+    rankedPlayers.sort((a, b) => b.overallScore - a.overallScore);
+
+    // Assign 1-indexed global rank
+    let myRank = null;
+    let myData = null;
+
+    rankedPlayers.forEach((player, index) => {
+      player.rank = index + 1;
+      if (currentUserId && player.user.toString() === currentUserId) {
+        myRank = player.rank;
+        myData = player;
+      }
+    });
+
+    const top10 = rankedPlayers.slice(0, 10);
+    const totalPlayers = rankedPlayers.length;
+
+    res.json({
+      top10,
+      myRank: myRank || (totalPlayers ? totalPlayers : 1),
+      myData,
+      totalPlayers
+    });
   } catch (err) {
+    console.error('Leaderboard fetch error:', err);
     res.status(500).json({ error: err.message });
   }
 });
