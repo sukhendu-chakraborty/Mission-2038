@@ -602,6 +602,7 @@ export default function AICoachTerminal() {
                     {/* MORPH MATRIX VISUALIZATION */}
                     <MorphMatrix 
                       stats={analysisResult.stats} 
+                      sessionLog={analysisResult.session_log}
                       report={analysisResult.report} 
                       drillType={selectedVideo?.drillType || "Shooting"} 
                     />
