@@ -44,3 +44,13 @@ next-env.d.ts
 venv/
 .venv/
 __pycache__/
+
+# Machine Learning & Dataset artifacts
+runs/
+football_dataset/
+*.pt
+
+# Uploaded test videos
+public/uploads/videos/*.mp4
+create_sample_dataset.py
+

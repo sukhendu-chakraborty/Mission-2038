@@ -29,7 +29,15 @@ pose_detector = SafePoseDetector()
 mp_pose = pose_detector.mp_pose
 pose = pose_detector
 
-yolo_model = YOLO('yolov8n.pt') 
+def load_yolo_model():
+    custom_weights = os.getenv("CUSTOM_YOLO_WEIGHTS")
+    if custom_weights and os.path.exists(custom_weights):
+        print(f"[✓] Loading custom-trained YOLO weights from: {custom_weights}")
+        return YOLO(custom_weights)
+    print("[!] Loading default 'yolov8n.pt'")
+    return YOLO('yolov8n.pt')
+
+yolo_model = load_yolo_model() 
 
 def get_body_bbox(landmarks, w, h):
     x_coords = [lm.x * w for lm in landmarks]
