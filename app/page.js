@@ -6,6 +6,7 @@ import HeroSection from "@/landing-page/HeroSection";
 import About from "@/landing-page/About";
 import Features from "@/landing-page/Features";
 import HistorySection from "@/landing-page/History";
+import Pricing from "@/landing-page/Pricing";
 import QuoteSection from "@/landing-page/QuoteSection";
 import Footer01 from "@/landing-page/footer/Footer01";
 import Preloader from "@/landing-page/PreLoader";
@@ -53,6 +54,7 @@ export default function Home() {
         <About />
         <Features />
         <HistorySection />
+        <Pricing />
         <QuoteSection />
         <Footer01 />
       </main>
