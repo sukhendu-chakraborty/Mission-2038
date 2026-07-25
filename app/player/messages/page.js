@@ -297,13 +297,33 @@ export default function PlayerMessages() {
       });
     }
 
-    // Persist via HTTP REST endpoint (saves in DB & broadcasts via Socket.io once)
+    // Persist via HTTP REST endpoint and append to local state immediately
     try {
-      await api.post(`/social/chats/${selectedChat._id}/messages`, {
+      const sentMsg = await api.post(`/social/chats/${selectedChat._id}/messages`, {
         text: newMessageText.trim(),
         mediaUrl: uploadedMediaUrl,
         mediaType: uploadedMediaType
       });
+
+      if (sentMsg) {
+        setMessages(prev => {
+          if (prev.some(m => String(m._id) === String(sentMsg._id))) return prev;
+          return [...prev, sentMsg];
+        });
+        setTimeout(() => scrollToBottom(), 50);
+      }
+
+      const snippet = newMessageText.trim() || (uploadedMediaType === 'video' ? '📹 Video Attachment' : '📷 Image Attachment');
+      setChats(prev => prev.map(ch => {
+        if (ch._id === selectedChat._id) {
+          return {
+            ...ch,
+            lastMessage: snippet,
+            lastMessageAt: new Date()
+          };
+        }
+        return ch;
+      }));
     } catch (pErr) {
       console.error("Failed to send message:", pErr);
       alert("Failed to send message: " + pErr.message);
@@ -482,6 +502,21 @@ export default function PlayerMessages() {
                     const senderId = typeof m.sender === 'object' ? (m.sender?._id || m.sender?.id) : m.sender;
                     const isOwn = String(senderId) === String(currentUserIdStr);
 
+                    const resolveMedia = (msg) => {
+                      if (!msg || !msg.mediaUrl) return null;
+                      let url = msg.mediaUrl;
+                      if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("data:")) {
+                        url = `http://localhost:5000${url.startsWith("/") ? "" : "/"}${url}`;
+                      }
+                      const isVideo = msg.mediaType === "video" || !!url.match(/\.(mp4|mov|webm|avi|mkv)(\?.*)?$/i);
+                      return {
+                        url,
+                        type: isVideo ? "video" : "image"
+                      };
+                    };
+
+                    const media = resolveMedia(m);
+
                     return (
                       <div key={m._id || Math.random()} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                         <div className={`max-w-md p-3.5 rounded-2xl text-xs leading-relaxed space-y-2 shadow-md ${
@@ -491,22 +526,32 @@ export default function PlayerMessages() {
                         }`}>
                           
                           {/* Image Attachment Rendering */}
-                          {m.mediaUrl && m.mediaType === "image" && (
+                          {media && media.type === "image" && (
                             <div 
-                              onClick={() => setPreviewMediaModal({ url: m.mediaUrl, type: "image" })}
+                              onClick={() => setPreviewMediaModal({ url: media.url, type: "image" })}
                               className="rounded-xl overflow-hidden cursor-pointer border border-black/10 hover:opacity-95 transition-all max-w-sm"
                             >
-                              <img src={m.mediaUrl} alt="Attached Media" className="w-full h-auto max-h-60 object-cover" />
+                              <img 
+                                src={media.url} 
+                                alt="Attached Media" 
+                                className="w-full h-auto max-h-64 object-cover rounded-xl"
+                                onError={(e) => {
+                                  if (!e.target.dataset.retried) {
+                                    e.target.dataset.retried = "true";
+                                    e.target.src = `${media.url}?t=${Date.now()}`;
+                                  }
+                                }}
+                              />
                             </div>
                           )}
 
                           {/* Video Attachment Rendering */}
-                          {m.mediaUrl && m.mediaType === "video" && (
+                          {media && media.type === "video" && (
                             <div className="rounded-xl overflow-hidden border border-black/20 bg-black max-w-sm">
                               <video 
-                                src={m.mediaUrl} 
+                                src={media.url} 
                                 controls 
-                                className="w-full h-auto max-h-60 rounded-xl"
+                                className="w-full h-auto max-h-64 rounded-xl"
                               />
                             </div>
                           )}

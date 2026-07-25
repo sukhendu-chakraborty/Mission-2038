@@ -304,43 +304,79 @@ router.post('/notifications/:id/read', authenticateToken, async (req, res) => {
   }
 });
 
-// 12. UPLOAD CHAT MEDIA (IMAGE / VIDEO)
+// 12. UPLOAD CHAT MEDIA TO CLOUDINARY (IMAGE / VIDEO)
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('../../config/cloudinary');
 
-const mediaStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../public/uploads/chat');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || (file.mimetype.includes('video') ? '.mp4' : '.jpg');
-    cb(null, `chat_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`);
-  }
-});
-
-const mediaUpload = multer({
-  storage: mediaStorage,
+const memStorage = multer.memoryStorage();
+const memoryUpload = multer({
+  storage: memStorage,
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
-router.post('/upload-media', authenticateToken, mediaUpload.single('file'), (req, res) => {
+router.post('/upload-media', authenticateToken, memoryUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No media file provided.' });
     }
-    const serverPort = process.env.PORT || 5000;
-    const mediaUrl = `http://localhost:${serverPort}/uploads/chat/${req.file.filename}`;
+
     const isVideo = req.file.mimetype.startsWith('video/');
-    res.json({
-      mediaUrl,
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+
+    if (cloudName && apiKey && !cloudName.includes('placeholder') && cloudName !== 'your_cloudinary_cloud_name') {
+      if (cloudinary.configureCloudinary) {
+        cloudinary.configureCloudinary();
+      }
+
+      const streamUpload = () => new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'mission2k38/chat_media',
+            resource_type: isVideo ? 'video' : 'auto'
+          },
+          (error, result) => {
+            if (error || !result) {
+              reject(error || new Error('Cloudinary upload stream failed'));
+            } else {
+              resolve(result);
+            }
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+
+      const cloudResult = await streamUpload();
+      if (cloudResult && cloudResult.secure_url) {
+        console.log('[Cloudinary Chat Media Upload Success]:', cloudResult.secure_url);
+        return res.json({
+          mediaUrl: cloudResult.secure_url,
+          mediaType: isVideo ? 'video' : 'image'
+        });
+      }
+    }
+
+    // Fallback local storage if Cloudinary unconfigured
+    const uploadDir = path.join(__dirname, '../../public/uploads/chat');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const ext = path.extname(req.file.originalname) || (isVideo ? '.mp4' : '.jpg');
+    const localFilename = `chat_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`;
+    const localPath = path.join(uploadDir, localFilename);
+    fs.writeFileSync(localPath, req.file.buffer);
+
+    const serverPort = process.env.PORT || 5000;
+    const localMediaUrl = `http://localhost:${serverPort}/uploads/chat/${localFilename}`;
+
+    return res.json({
+      mediaUrl: localMediaUrl,
       mediaType: isVideo ? 'video' : 'image'
     });
   } catch (err) {
+    console.error('Chat media upload error:', err);
     res.status(500).json({ error: 'Failed to upload chat media: ' + err.message });
   }
 });
@@ -404,12 +440,17 @@ router.post('/chats/:chatId/messages', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized chat access.' });
     }
 
+    let finalMediaType = mediaType;
+    if (mediaUrl && !finalMediaType) {
+      finalMediaType = mediaUrl.match(/\.(mp4|mov|webm|avi|mkv)(\?.*)?$/i) ? 'video' : 'image';
+    }
+
     const message = new Message({
       chat: chatId,
       sender: req.user.userId,
       text,
       mediaUrl: mediaUrl || '',
-      mediaType: mediaType || undefined
+      mediaType: finalMediaType || undefined
     });
     await message.save();
 
