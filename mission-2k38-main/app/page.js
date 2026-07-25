@@ -10,6 +10,7 @@ import Pricing from "@/landing-page/Pricing";
 import QuoteSection from "@/landing-page/QuoteSection";
 import Footer01 from "@/landing-page/footer/Footer01";
 import Preloader from "@/landing-page/PreLoader";
+import FollowCursor from "@/components/ui/FollowCursor";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +35,7 @@ export default function Home() {
   return (
     <>
       <Preloader isLoading={isLoading} setIsLoading={setIsLoading} />
+      <FollowCursor />
 
       {/*
         IMPORTANT – no scale/transform here.

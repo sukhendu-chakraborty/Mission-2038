@@ -1,7 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import FollowCursor from "@/components/ui/FollowCursor";
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,7 +25,6 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
         <SmoothScroll>
-          <FollowCursor />
           {children}
         </SmoothScroll>
       </body>

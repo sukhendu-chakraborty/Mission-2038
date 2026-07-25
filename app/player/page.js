@@ -318,12 +318,18 @@ export default function PlayerDashboard() {
             <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-6 text-center relative overflow-hidden shadow-2xl">
               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 to-amber-500" />
               
-              <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-yellow-400/40 mx-auto mt-4 mb-4 bg-zinc-850">
-                <img 
-                  src={profile?.profilePhoto || "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150"} 
-                  alt="Player Profile" 
-                  className="w-full h-full object-cover" 
-                />
+              <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-yellow-400/40 mx-auto mt-4 mb-4 bg-zinc-850 flex items-center justify-center">
+                {profile?.profilePhoto ? (
+                  <img 
+                    src={profile.profilePhoto} 
+                    alt="Player Profile" 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <span className="text-4xl font-black uppercase text-yellow-400">
+                    {profile?.name ? profile.name.charAt(0) : "U"}
+                  </span>
+                )}
               </div>
 
               <h3 className="text-xl font-black uppercase text-white">{profile?.name}</h3>

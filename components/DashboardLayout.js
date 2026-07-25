@@ -7,6 +7,7 @@ import {
   Home, User, Video, TrendingUp, Trophy, Users,
   MessageSquare, Bell, Settings, LogOut, Search, BookOpen, ShieldAlert, FileText
 } from "lucide-react";
+import Image from "next/image";
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
@@ -118,8 +119,8 @@ export default function DashboardLayout({ children }) {
       {/* FIXED SIDEBAR FOR DESKTOP */}
       <aside className="hidden lg:flex flex-col w-72 h-screen fixed top-0 left-0 z-40 bg-zinc-950/90 border-r border-zinc-800/80 backdrop-blur-xl p-6 select-none">
         <div className="flex items-center space-x-3 mb-8 px-2 shrink-0">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 flex items-center justify-center font-black text-black text-xl shadow-[0_0_20px_rgba(250,204,21,0.35)]">
-            M
+          <div className="flex items-center justify-center">
+            <Image src="/logo.png" alt="Mission 2K38" width={40} height={40} className="object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-black tracking-widest text-white leading-none">
@@ -131,14 +132,19 @@ export default function DashboardLayout({ children }) {
           </div>
         </div>
 
-        {/* User Card */}
         <div className="mb-6 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 flex items-center space-x-3 shrink-0">
-          <div className="relative w-11 h-11 rounded-full overflow-hidden bg-zinc-800 border border-yellow-400/30">
-            <img
-              src={currentProfile?.profilePhoto || "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150"}
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
+          <div className="relative w-11 h-11 rounded-full overflow-hidden bg-zinc-800 border border-yellow-400/30 flex items-center justify-center">
+            {currentProfile?.profilePhoto ? (
+              <img
+                src={currentProfile.profilePhoto}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xl font-black uppercase text-yellow-400">
+                {(currentProfile?.name || currentUser.email).charAt(0)}
+              </span>
+            )}
           </div>
           <div className="overflow-hidden">
             <h4 className="text-sm font-bold text-white truncate">
@@ -307,12 +313,18 @@ export default function DashboardLayout({ children }) {
               <span className="text-xs text-zinc-400">
                 Welcome, <strong className="text-white">{currentProfile?.name || currentUser.email.split('@')[0]}</strong>
               </span>
-              <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden border border-yellow-400/20">
-                <img
-                  src={currentProfile?.profilePhoto || "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150"}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden border border-yellow-400/20 flex items-center justify-center">
+                {currentProfile?.profilePhoto ? (
+                  <img
+                    src={currentProfile.profilePhoto}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-black uppercase text-yellow-400">
+                    {(currentProfile?.name || currentUser.email).charAt(0)}
+                  </span>
+                )}
               </div>
             </div>
           </div>

@@ -3,12 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roleQuery = searchParams.get("role") || "player";
   const [role, setRole] = useState(roleQuery);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (roleQuery) setRole(roleQuery);
@@ -168,8 +170,14 @@ function RegisterContent() {
                 </div>
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1">Password *</label>
-                  <input type="password" name="password" required value={formData.password} onChange={handleChange}
-                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-yellow-400 focus:outline-none rounded p-3 text-white" />
+                  <div className="relative">
+                    <input type={showPassword ? "text" : "password"} name="password" required value={formData.password} onChange={handleChange}
+                      className="w-full bg-zinc-950 border border-zinc-800 focus:border-yellow-400 focus:outline-none rounded p-3 pr-10 text-white" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+                      {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1">Phone Number</label>
