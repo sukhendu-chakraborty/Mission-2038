@@ -12,8 +12,19 @@ export default function PlayerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [rankInfo, setRankInfo] = useState(null);
+
   useEffect(() => {
     loadDashboard();
+    api.get("/dashboard/leaderboard")
+      .then(res => {
+        setRankInfo({
+          rank: res.myRank || 1,
+          total: res.totalPlayers || 1,
+          myData: res.myData
+        });
+      })
+      .catch(err => console.error(err));
   }, []);
 
   const loadDashboard = () => {
@@ -108,12 +119,44 @@ export default function PlayerDashboard() {
               Analyze your matches, review custom AI-coaching drills, and stay ready to showcase your skills to scouts across the country.
             </p>
           </div>
-          <button 
-            onClick={() => router.push("/player/coach")} 
-            className="relative overflow-hidden group bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-black uppercase tracking-widest px-6 py-4 rounded-full shadow-[0_0_30px_rgba(250,204,21,0.3)] transition-all hover:scale-105"
-          >
-            Start AI Training →
-          </button>
+          {/* YOUR RANK BANNER CARD WITH GLOBAL LEADERBOARD HEADER LINK */}
+          <div className="flex flex-col items-end gap-2 shrink-0 w-full md:w-auto">
+            <button
+              onClick={() => router.push("/player/leaderboard")}
+              className="text-xs font-black uppercase tracking-widest text-yellow-400 hover:text-white transition-colors flex items-center gap-1.5 group bg-yellow-400/10 px-4 py-1.5 rounded-full border border-yellow-400/30 hover:border-yellow-400 shadow-md"
+            >
+              <Trophy className="w-3.5 h-3.5 text-yellow-400 group-hover:scale-110 transition-transform" />
+              <span>Global Leaderboard</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            <div 
+              onClick={() => router.push("/player/leaderboard")}
+              className="w-full md:w-auto bg-zinc-900/90 border-2 border-yellow-400/40 hover:border-yellow-400 rounded-2xl p-4 md:p-5 flex items-center gap-4 cursor-pointer hover:scale-[1.02] transition-all shadow-xl backdrop-blur-md"
+              title="Click to view Global Leaderboard"
+            >
+              <div className="flex flex-col items-center justify-center bg-gradient-to-b from-yellow-400 to-amber-600 text-black font-black p-3 rounded-xl min-w-[75px] shadow-lg">
+                <span className="text-[9px] uppercase tracking-widest font-bold opacity-80">YOUR RANK</span>
+                <span className="text-2xl leading-none font-black mt-0.5">#{rankInfo?.rank || 1}</span>
+                <span className="text-[8px] font-bold opacity-75">OF {rankInfo?.total || 14}</span>
+              </div>
+              <div className="space-y-1 pr-2">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-bold text-sm text-white">{profile?.name}</h4>
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-yellow-400/20 text-yellow-400 border border-yellow-400/30">
+                    {profile?.preferredPosition || 'CAM'}
+                  </span>
+                </div>
+                <p className="text-[10px] text-zinc-400">
+                  {profile?.currentClub || 'FC Barcelona'} • Overall Score: <strong className="text-yellow-400 font-bold">{rankInfo?.myData ? rankInfo.myData.overallScore : (profile?.skills?.scoutRatingsCount > 0 ? (profile?.skills?.scoutScore || 0) : 0)}/99</strong>
+                </p>
+                <div className="flex items-center gap-1.5 text-[9px] text-green-400 font-semibold pt-0.5">
+                  <span className="text-amber-400">🔥</span>
+                  <span>Top {Math.max(1, Math.round(((rankInfo?.rank || 1) / (rankInfo?.total || 14)) * 100))}% Global Standing</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* QUICK STATS GRID */}
@@ -288,19 +331,22 @@ export default function PlayerDashboard() {
 
               {/* Skill stats radar ratings mockup */}
               <div className="mt-8 grid grid-cols-2 gap-4">
-                {[
-                  { label: "Overall", val: profile?.skills?.aiScore || 60 },
-                  { label: "Speed", val: profile?.skills?.speed || 60 },
-                  { label: "Passing", val: profile?.skills?.passing || 60 },
-                  { label: "Dribbling", val: profile?.skills?.dribbling || 60 },
-                  { label: "Finishing", val: profile?.skills?.finishing || 60 },
-                  { label: "Potential", val: profile?.skills?.potential || 70 },
-                ].map((s) => (
-                  <div key={s.label} className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-900 text-left">
-                    <span className="block text-[9px] uppercase tracking-widest text-zinc-500 font-bold">{s.label}</span>
-                    <span className="text-lg font-black text-white">{s.val}</span>
-                  </div>
-                ))}
+                {(() => {
+                  const isRated = (profile?.skills?.scoutRatingsCount || 0) > 0;
+                  return [
+                    { label: "Overall", val: isRated ? (profile?.skills?.scoutScore || profile?.skills?.overallScore || 0) : 0 },
+                    { label: "Speed", val: isRated ? (profile?.skills?.speed || 0) : 0 },
+                    { label: "Passing", val: isRated ? (profile?.skills?.passing || 0) : 0 },
+                    { label: "Dribbling", val: isRated ? (profile?.skills?.dribbling || 0) : 0 },
+                    { label: "Finishing", val: isRated ? (profile?.skills?.finishing || profile?.skills?.shooting || 0) : 0 },
+                    { label: "Potential", val: isRated ? (profile?.skills?.potential || 0) : 0 },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-900 text-left">
+                      <span className="block text-[9px] uppercase tracking-widest text-zinc-500 font-bold">{s.label}</span>
+                      <span className="text-lg font-black text-white">{s.val}</span>
+                    </div>
+                  ));
+                })()}
               </div>
 
               <button 
