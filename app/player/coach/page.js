@@ -17,7 +17,7 @@ export default function AICoachTerminal() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [error, setError] = useState(null);
-  const [showOverlay, setShowOverlay] = useState(true);
+  const [showOverlay, setShowOverlay] = useState(false);
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -274,27 +274,7 @@ export default function AICoachTerminal() {
         ctx.font = "bold 9px monospace";
         ctx.fillText("PLAYER DETECTED 98%", bboxX + 4, bboxY - 7);
 
-        // 2. SKELETON LIMBS
-        const limbs = [
-          [head, neck], [neck, leftShoulder], [neck, rightShoulder],
-          [leftShoulder, leftElbow], [leftElbow, leftWrist],
-          [rightShoulder, rightElbow], [rightElbow, rightWrist],
-          [neck, leftHip], [neck, rightHip], [leftHip, rightHip],
-          [leftHip, leftKnee], [leftKnee, leftAnkle],
-          [rightHip, rightKnee], [rightKnee, rightAnkle]
-        ];
-
-        ctx.shadowColor = "#eab308";
-        ctx.shadowBlur = 8;
-
-        limbs.forEach(([s, e]) => {
-          ctx.beginPath();
-          ctx.moveTo(s.x, s.y);
-          ctx.lineTo(e.x, e.y);
-          ctx.strokeStyle = "#22c55e"; // Neon Green
-          ctx.lineWidth = 3.5;
-          ctx.stroke();
-        });
+        // 2. SKELETON LIMBS (Removed to prevent static overlay during video playback)
 
         // 3. JOINTS (KEYPOINTS)
         const joints = [head, neck, leftShoulder, rightShoulder, leftElbow, rightElbow, leftWrist, rightWrist, leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle];
@@ -413,7 +393,7 @@ export default function AICoachTerminal() {
                 No videos uploaded yet. Go to "Upload Video" page.
               </div>
             ) : (
-              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1" data-lenis-prevent>
                 {videos.map((vid) => (
                   <div
                     key={vid._id}
@@ -537,7 +517,7 @@ export default function AICoachTerminal() {
 
               {/* CONSOLE STATUS LOGS */}
               {logMessages.length > 0 && (
-                <div className="bg-black/90 p-5 border-t border-zinc-850 max-h-44 overflow-y-auto font-mono text-[10px] text-yellow-400/90 space-y-1.5 scrollbar-thin">
+                <div className="bg-black/90 p-5 border-t border-zinc-850 max-h-44 overflow-y-auto font-mono text-[10px] text-yellow-400/90 space-y-1.5 scrollbar-thin" data-lenis-prevent>
                   {logMessages.map((msg, i) => (
                     <div key={i} className="flex gap-2">
                       <span className="text-zinc-600 select-none">[{i+1}]</span>

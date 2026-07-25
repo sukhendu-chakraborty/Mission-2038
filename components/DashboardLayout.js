@@ -151,7 +151,7 @@ export default function DashboardLayout({ children }) {
         </div>
 
         {/* Navigation links */}
-        <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto pr-1" data-lenis-prevent>
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
@@ -277,7 +277,7 @@ export default function DashboardLayout({ children }) {
                       Notifications ({unreadCount})
                     </h3>
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-zinc-900">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-zinc-900" data-lenis-prevent>
                     {notifications.length === 0 ? (
                       <div className="p-6 text-center text-zinc-500 text-xs">
                         No new notifications.
