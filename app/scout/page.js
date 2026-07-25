@@ -157,8 +157,14 @@ export default function ScoutDashboard() {
               <div className="space-y-4">
                 {savedPlayers.slice(0, 3).map((p) => (
                   <div key={p._id} className="p-4 rounded-xl bg-zinc-950/40 border border-zinc-850 flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-zinc-800 bg-zinc-900 shrink-0">
-                      <img src={p.profilePhoto} alt="Player" className="w-full h-full object-cover" />
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-zinc-800 bg-zinc-900 shrink-0 flex items-center justify-center">
+                      {p.profilePhoto ? (
+                        <img src={p.profilePhoto} alt="Player" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-base font-black uppercase text-yellow-400">
+                          {(p.name || "P").charAt(0)}
+                        </span>
+                      )}
                     </div>
                     <div className="truncate flex-1">
                       <h4 className="text-white font-bold text-xs truncate">{p.name}</h4>

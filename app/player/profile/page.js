@@ -76,12 +76,18 @@ export default function PlayerProfile() {
                 </div>
 
                 {/* FUT Card Avatar Image */}
-                <div className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400/40 mx-auto relative z-10 bg-zinc-900">
-                  <img 
-                    src={profile.profilePhoto || "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150"} 
-                    alt="Player Card" 
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400/40 mx-auto relative z-10 bg-zinc-900 flex items-center justify-center">
+                  {profile.profilePhoto ? (
+                    <img 
+                      src={profile.profilePhoto} 
+                      alt="Player Card" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-5xl font-black uppercase text-yellow-400">
+                      {(profile.name || "Player").charAt(0)}
+                    </span>
+                  )}
                 </div>
 
                 {/* FUT Card User Title */}

@@ -354,8 +354,9 @@ export default function AICoachTerminal() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-850 pb-6">
+      <div className="max-w-7xl mx-auto flex flex-col lg:h-[calc(100vh-8rem)] overflow-hidden space-y-6">
+        {/* HEADER BAR (FIXED) */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-850 pb-4 shrink-0">
           <div>
             <h2 className="text-3xl font-black uppercase text-white tracking-wider">AI Training Terminal</h2>
             <p className="text-zinc-400 text-xs mt-1 uppercase tracking-widest font-bold">
@@ -376,24 +377,25 @@ export default function AICoachTerminal() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* SIDEBAR: VIDEO SELECTOR */}
-          <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-6 space-y-6">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400 border-b border-zinc-800 pb-3">
+        {/* MAIN TERMINAL GRID (FIXED LAYOUT) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0 overflow-hidden">
+          {/* SIDEBAR: VIDEO SELECTOR (FIXED) */}
+          <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-6 flex flex-col h-full overflow-hidden shrink-0">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400 border-b border-zinc-800 pb-3 shrink-0">
               Upload History
             </h3>
 
             {loadingVideos ? (
-              <div className="text-center py-10 space-y-3">
+              <div className="text-center py-10 space-y-3 shrink-0">
                 <Loader className="w-6 h-6 animate-spin text-yellow-400 mx-auto" />
                 <span className="text-xs text-zinc-500 font-bold uppercase">Loading Videos...</span>
               </div>
             ) : videos.length === 0 ? (
-              <div className="text-center py-10 text-zinc-500 text-xs">
+              <div className="text-center py-10 text-zinc-500 text-xs shrink-0">
                 No videos uploaded yet. Go to "Upload Video" page.
               </div>
             ) : (
-              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1" data-lenis-prevent>
+              <div className="space-y-3 flex-1 overflow-y-auto pr-1 mt-3 scrollbar-thin" data-lenis-prevent>
                 {videos.map((vid) => (
                   <div
                     key={vid._id}
@@ -432,7 +434,7 @@ export default function AICoachTerminal() {
             )}
 
             {selectedVideo && (
-              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-850 space-y-4">
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-850 space-y-4 shrink-0 mt-3">
                 <div>
                   <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-black">Selected Video</span>
                   <h4 className="text-white font-bold text-sm truncate">{selectedVideo.title}</h4>
@@ -440,7 +442,7 @@ export default function AICoachTerminal() {
                 <button
                   onClick={handleStartAnalysis}
                   disabled={analyzing}
-                  className="w-full bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-black uppercase tracking-wider py-3.5 rounded-xl text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-black uppercase tracking-wider py-3 rounded-xl text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg"
                 >
                   {analyzing ? (
                     <>
@@ -458,17 +460,17 @@ export default function AICoachTerminal() {
             )}
           </div>
 
-          {/* MAIN MONITOR SCREEN: VIDEO PLAYER & LIVE AI ENGINE */}
-          <div className="lg:col-span-2 space-y-8">
+          {/* RIGHT COLUMN: VIDEO PLAYER + YELLOW LOGS + REPORT (ALL SCROLLABLE TOGETHER) */}
+          <div className="lg:col-span-2 flex flex-col h-full min-h-0 space-y-6 overflow-y-auto pr-2 scrollbar-thin rounded-3xl" data-lenis-prevent>
             {error && (
-              <div className="p-4 rounded-2xl bg-red-950/40 border border-red-500/50 text-red-200 text-xs flex items-center gap-3">
+              <div className="p-4 rounded-2xl bg-red-950/40 border border-red-500/50 text-red-200 text-xs flex items-center gap-3 shrink-0">
                 <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             {/* MONITOR PANEL */}
-            <div className="bg-zinc-950 border border-zinc-800/80 rounded-3xl overflow-hidden shadow-2xl relative">
+            <div className="bg-zinc-950 border border-zinc-800/80 rounded-3xl overflow-hidden shadow-2xl relative shrink-0">
               <div className="flex justify-between items-center bg-zinc-900/60 px-6 py-4 border-b border-zinc-850">
                 <span className="text-xs uppercase tracking-widest font-black text-white flex items-center gap-2">
                   <Cpu className="text-yellow-400 w-4 h-4" /> Live AI Engine Telemetry & Video Feed
@@ -517,7 +519,7 @@ export default function AICoachTerminal() {
 
               {/* CONSOLE STATUS LOGS */}
               {logMessages.length > 0 && (
-                <div className="bg-black/90 p-5 border-t border-zinc-850 max-h-44 overflow-y-auto font-mono text-[10px] text-yellow-400/90 space-y-1.5 scrollbar-thin" data-lenis-prevent>
+                <div className="bg-black/90 p-4 border-t border-zinc-850 max-h-44 overflow-y-auto font-mono text-[10px] text-yellow-400/90 space-y-1.5 scrollbar-thin" data-lenis-prevent>
                   {logMessages.map((msg, i) => (
                     <div key={i} className="flex gap-2">
                       <span className="text-zinc-600 select-none">[{i+1}]</span>

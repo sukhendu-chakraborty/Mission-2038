@@ -227,8 +227,14 @@ export default function ScoutSearch() {
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border border-zinc-800 bg-zinc-950 shrink-0">
-                      <img src={player.profilePhoto} alt="Player" className="w-full h-full object-cover" />
+                    <div className="w-12 h-12 rounded-full overflow-hidden border border-zinc-800 bg-zinc-950 shrink-0 flex items-center justify-center">
+                      {player.profilePhoto ? (
+                        <img src={player.profilePhoto} alt="Player" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xl font-black uppercase text-yellow-400">
+                          {(player.name || "P").charAt(0)}
+                        </span>
+                      )}
                     </div>
                     
                     {/* FUT Score */}
