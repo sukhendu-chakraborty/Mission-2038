@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+import { io as ioClient } from "socket.io-client";
+
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -21,6 +23,9 @@ export default function DashboardLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
+    let socket;
+    let pollInterval;
+
     if (typeof window !== "undefined") {
       const userStr = localStorage.getItem("user");
       const profileStr = localStorage.getItem("profile");
@@ -32,16 +37,58 @@ export default function DashboardLayout({ children }) {
 
       const parsedUser = JSON.parse(userStr);
       setCurrentUser(parsedUser);
-      if (profileStr) setCurrentProfile(JSON.parse(profileStr));
+      const rawUserId = parsedUser.id || parsedUser._id || parsedUser.userId || (parsedUser.user ? parsedUser.user.id || parsedUser.user._id : null);
+      const cleanUserId = typeof rawUserId === "object" ? (rawUserId._id || rawUserId.id)?.toString() : rawUserId?.toString();
 
-      // Fetch fresh notifications
-      api.get("/social/notifications")
-        .then(data => {
-          setNotifications(data);
-          setUnreadCount(data.filter(n => !n.read).length);
-        })
-        .catch(err => console.error("Error loading notifications:", err));
+      // 1. Initial Notification Load
+      const loadNotifications = () => {
+        api.get("/social/notifications")
+          .then(data => {
+            if (Array.isArray(data)) {
+              setNotifications(data);
+              setUnreadCount(data.filter(n => !n.read).length);
+            }
+          })
+          .catch(err => console.error("Error loading notifications:", err));
+      };
+
+      loadNotifications();
+
+      // 2. Real-Time Socket.io Connection & Listening
+      try {
+        socket = ioClient("http://localhost:5000", {
+          transports: ["websocket", "polling"],
+          reconnection: true
+        });
+
+        if (cleanUserId) {
+          socket.emit("join", cleanUserId);
+        }
+
+        socket.on("connect", () => {
+          if (cleanUserId) {
+            socket.emit("join", cleanUserId);
+          }
+        });
+
+        socket.on("notification:new", (newNotif) => {
+          setNotifications(prev => [newNotif, ...prev.filter(n => n._id !== newNotif._id)]);
+          setUnreadCount(prev => prev + 1);
+        });
+      } catch (sErr) {
+        console.warn("Socket.io connect notice:", sErr);
+      }
+
+      // 3. Fallback 5-second background sync
+      pollInterval = setInterval(() => {
+        loadNotifications();
+      }, 5000);
     }
+
+    return () => {
+      if (socket) socket.disconnect();
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [router]);
 
   const handleSignOut = () => {

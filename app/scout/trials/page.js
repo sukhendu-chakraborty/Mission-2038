@@ -9,6 +9,8 @@ import {
   CheckCircle2, AlertCircle, Search, UserCheck, X, Check, Eye, Sliders, Trash2
 } from "lucide-react";
 
+import { io as ioClient } from "socket.io-client";
+
 const AGE_OPTIONS = ["U-13", "U-15", "U-17", "U-19", "U-21", "U-23", "Senior"];
 const POSITION_OPTIONS = ["ST", "LW", "RW", "CAM", "CM", "CDM", "LB", "RB", "CB", "GK", "WB"];
 
@@ -82,15 +84,49 @@ export default function ScoutTrials() {
     invitedPlayers: []
   });
 
+  const loadTrialsSilent = () => {
+    api.get("/trials")
+      .then(res => {
+        if (Array.isArray(res)) setTrials(res);
+      })
+      .catch(err => console.error("Silent trials reload error:", err));
+  };
+
   useEffect(() => {
+    let socket;
+    let pollInterval;
+
     if (typeof window !== "undefined") {
       const uStr = localStorage.getItem("user");
       const pStr = localStorage.getItem("profile");
       if (uStr) setCurrentUser(JSON.parse(uStr));
       if (pStr) setCurrentProfile(JSON.parse(pStr));
+
+      try {
+        socket = ioClient("http://localhost:5000", {
+          transports: ["websocket", "polling"],
+          reconnection: true
+        });
+
+        socket.on("notification:new", () => {
+          loadTrialsSilent();
+        });
+      } catch (sErr) {
+        console.warn("Socket connect notice:", sErr);
+      }
+
+      pollInterval = setInterval(() => {
+        loadTrialsSilent();
+      }, 4000);
     }
+
     loadTrials();
     loadPlayersList();
+
+    return () => {
+      if (socket) socket.disconnect();
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, []);
 
   const openTrialRatingModal = async (trial, applicant, rawPId) => {

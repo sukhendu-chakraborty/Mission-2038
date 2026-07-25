@@ -198,7 +198,28 @@ router.post('/', authenticateToken, async (req, res) => {
 
     await trial.save();
 
-    // NOTIFICATIONS DISPATCH
+    const getCleanUserId = (userObj) => {
+      if (!userObj) return null;
+      if (typeof userObj === 'string') return userObj;
+      if (userObj._id) return userObj._id.toString();
+      if (userObj.id) return userObj.id.toString();
+      return userObj.toString();
+    };
+
+    const emitRealtimeNotification = (req, targetUserId, notificationData) => {
+      try {
+        const io = req.app.get('io');
+        const cleanId = getCleanUserId(targetUserId);
+        if (io && cleanId) {
+          console.log(`[Socket.io Notify] Emitting real-time notification to room: user_${cleanId}`);
+          io.to(`user_${cleanId}`).emit('notification:new', notificationData);
+        }
+      } catch (err) {
+        console.error('[Socket.io Notify Error]:', err.message);
+      }
+    };
+
+// NOTIFICATIONS DISPATCH
     const scoutProfile = await Profile.findOne({ user: userId });
     const organizerName = scoutProfile?.name || 'A Scout/Club';
 
@@ -228,7 +249,8 @@ router.post('/', authenticateToken, async (req, res) => {
       }));
 
       if (notifications.length > 0) {
-        await Notification.insertMany(notifications);
+        const savedNotifs = await Notification.insertMany(notifications);
+        savedNotifs.forEach(n => emitRealtimeNotification(req, n.user, n));
       }
     } else if (trial.privacy === 'private' && trial.invitedPlayers.length > 0) {
       // Dispatch direct invitations to invited players
@@ -240,7 +262,8 @@ router.post('/', authenticateToken, async (req, res) => {
         data: { trialId: trial._id }
       }));
 
-      await Notification.insertMany(notifications);
+      const savedNotifs = await Notification.insertMany(notifications);
+      savedNotifs.forEach(n => emitRealtimeNotification(req, n.user, n));
     }
 
     res.status(201).json({ message: 'Trial scheduled successfully.', trial });
@@ -277,13 +300,14 @@ router.post('/:id/apply', authenticateToken, async (req, res) => {
 
     // Send notification to trial organizer
     const playerProfile = await Profile.findOne({ user: userId });
-    await Notification.create({
+    const notif1 = await Notification.create({
       user: trial.scout,
       type: 'trial',
       title: '🎯 New Trial Applicant',
       message: `${playerProfile?.name || 'A player'} has registered for your trial: "${trial.title}".`,
       data: { trialId: trial._id, playerId: userId }
     });
+    emitRealtimeNotification(req, trial.scout, notif1);
 
     res.json({ message: 'Successfully registered for trial!', trial });
   } catch (err) {
@@ -317,13 +341,14 @@ router.put('/:id/applicant', authenticateToken, async (req, res) => {
     await trial.save();
 
     // Notify player of decision
-    await Notification.create({
+    const notif2 = await Notification.create({
       user: targetPlayerId,
       type: 'trial',
       title: `Trial Registration Updated (${status.toUpperCase()})`,
       message: `Your status for "${trial.title}" has been updated to: ${status.toUpperCase()}.`,
       data: { trialId: trial._id }
     });
+    emitRealtimeNotification(req, targetPlayerId, notif2);
 
     res.json({ message: `Applicant status updated to ${status}.`, trial });
   } catch (err) {
@@ -357,13 +382,14 @@ router.post('/:id/decline', authenticateToken, async (req, res) => {
     await trial.save();
 
     // Notify organizer of declined invitation
-    await Notification.create({
+    const notif3 = await Notification.create({
       user: trial.scout,
       type: 'trial',
       title: 'Invitation Declined',
       message: `A player has declined your invitation for trial: "${trial.title}".`,
       data: { trialId: trial._id, playerId: userId }
     });
+    emitRealtimeNotification(req, trial.scout, notif3);
 
     res.json({ message: 'Trial invitation declined.', trial });
   } catch (err) {
