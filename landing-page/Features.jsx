@@ -4,20 +4,11 @@ import { useRef, useState } from "react";
 import { TiLocationArrow } from "react-icons/ti";
 
 const VIDEO_LINKS = {
-    feature1:
-        "https://93w95scdts.ufs.sh/f/AOfILeWJzqCc56aV03LYRyJDZsOPGdFTt0lQuHLkeqjKCao1",
-
-    feature2:
-        "https://93w95scdts.ufs.sh/f/AOfILeWJzqCclcn5JiTo8NUtBfpgkOmXZ2CT3DjMr19Yqlac",
-
-    feature3:
-        "https://93w95scdts.ufs.sh/f/AOfILeWJzqCcbZvH6O7fXDrfMZ6S457EQsgoxTCIz1kjlnVd",
-
-    feature4:
-        "https://93w95scdts.ufs.sh/f/AOfILeWJzqCcSrGHFCyiMbxBtTacUmFzn4dZpwVYNfvR6WLg",
-
-    feature5:
-        "https://93w95scdts.ufs.sh/f/AOfILeWJzqCc1qT68sSEu6tgkCBNP3FH45AUe70hrbTaxYDm",
+    feature1: "/videos/kick.mp4",
+    feature2: "https://93w95scdts.ufs.sh/f/AOfILeWJzqCclcn5JiTo8NUtBfpgkOmXZ2CT3DjMr19Yqlac",
+    feature3: "https://93w95scdts.ufs.sh/f/AOfILeWJzqCcbZvH6O7fXDrfMZ6S457EQsgoxTCIz1kjlnVd",
+    feature4: "https://93w95scdts.ufs.sh/f/AOfILeWJzqCcSrGHFCyiMbxBtTacUmFzn4dZpwVYNfvR6WLg",
+    feature5: "/videos/bts-gp.mp4",
 };
 
 const BentoTilt = ({ children, className = "" }) => {
@@ -73,14 +64,14 @@ const BentoCard = ({ src, title, description }) => {
                 className="absolute top-0 left-0 h-full w-full object-cover"
             />
 
-            <div className="relative z-10 flex h-full flex-col justify-between bg-black/30 p-6 text-white">
+            <div className="relative z-10 flex h-full flex-col justify-between bg-black/50 p-6 text-white">
                 <div>
-                    <h1 className="special-font text-4xl md:text-6xl font-black uppercase leading-none">
-                        <b>{title}</b>
-                    </h1>
+                    <h2 className="text-lg md:text-2xl font-black uppercase tracking-wide leading-snug">
+                        {title}
+                    </h2>
 
                     {description && (
-                        <p className="mt-4 max-w-xs text-sm md:text-base text-gray-200">
+                        <p className="mt-3 max-w-xs text-xs md:text-sm text-gray-300 font-medium leading-relaxed">
                             {description}
                         </p>
                     )}
@@ -95,14 +86,17 @@ const Features = () => {
         <section className="bg-black pb-40 text-white">
             <div className="mx-auto max-w-[1400px] px-4 md:px-10">
                 {/* TOP TEXT */}
-                <div className="py-24">
-                    <p className="special-font text-lg uppercase tracking-[0.2em] text-violet-400">
-                        <b>Into the Metagame Layer</b>
-                    </p>
+                <div className="py-20 md:py-28">
+                    <span className="text-yellow-400 text-xs md:text-sm font-black uppercase tracking-[0.3em] px-4 py-1.5 bg-yellow-400/10 rounded-full border border-yellow-400/20">
+                        MISSION 2K38 ECOSYSTEM
+                    </span>
 
-                    <p className="mt-5 max-w-2xl text-lg text-gray-300">
-                        Immerse yourself in a rich and ever-expanding universe where gaming,
-                        AI, Web3, and futuristic experiences merge into one cinematic world.
+                    <h1 className="mt-6 text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black uppercase tracking-tight leading-[0.95] text-white max-w-5xl">
+                        REVOLUTIONIZING <span className="text-yellow-400">FOOTBALL</span> WITH AI INTELLIGENCE
+                    </h1>
+
+                    <p className="mt-6 max-w-3xl text-base md:text-xl text-gray-300 font-normal leading-relaxed">
+                        Empowering Indian grassroots football with real-time computer vision match tracking, dynamic FIFA-style scout cards, and personalized AI coaching.
                     </p>
                 </div>
 
@@ -112,10 +106,10 @@ const Features = () => {
                         src={VIDEO_LINKS.feature1}
                         title={
                             <>
-                                radia<span className="text-violet-400">n</span>t
+                                AI-Powered Football <span className="text-yellow-400">Performance Analysis</span>
                             </>
                         }
-                        description="A cross-platform metagame app transforming gameplay into a rewarding cinematic adventure."
+                        description="Computer vision and MediaPipe tracking to analyze match highlights, shot speed, sprint velocity, and player movement."
                     />
                 </BentoTilt>
 
@@ -126,10 +120,10 @@ const Features = () => {
                             src={VIDEO_LINKS.feature2}
                             title={
                                 <>
-                                    zig<span className="text-cyan-400">m</span>a
+                                    Performance Trend & <span className="text-amber-400">Progress Analytics</span>
                                 </>
                             }
-                            description="Anime-inspired futuristic NFT universe built for expansion."
+                            description="Track your career statistics, ELO growth, match history, goals, assists, and skill radar development over time."
                         />
                     </BentoTilt>
 
@@ -138,10 +132,10 @@ const Features = () => {
                             src={VIDEO_LINKS.feature3}
                             title={
                                 <>
-                                    n<span className="text-violet-400">e</span>xus
+                                    AI-Based Digital <span className="text-yellow-400">Player Card & Scouting</span>
                                 </>
                             }
-                            description="A social gaming hub bringing communities together."
+                            description="Generate FIFA-style dynamic scout cards and connect directly with verified scouts and academies across India."
                         />
                     </BentoTilt>
 
@@ -150,14 +144,14 @@ const Features = () => {
                             src={VIDEO_LINKS.feature4}
                             title={
                                 <>
-                                    az<span className="text-cyan-400">u</span>l
+                                    Personalized AI Coach & <span className="text-amber-400">Training Recommendations</span>
                                 </>
                             }
-                            description="AI-powered gameplay assistant for futuristic worlds."
+                            description="Custom AI-tailored tactical drills, feedback, and skill development plans based on your pitch performance."
                         />
                     </BentoTilt>
 
-                    <BentoTilt className="flex min-h-[300px] items-center justify-center rounded-3xl bg-violet-400 p-8">
+                    <BentoTilt className="flex min-h-[300px] items-center justify-center rounded-3xl bg-gradient-to-br from-yellow-400 to-amber-500 p-8">
                         <div className="flex h-full w-full flex-col justify-between">
                             <h1 className="special-font max-w-xs text-4xl font-black uppercase text-black md:text-5xl">
                                 <b>M<span className="text-white">o</span>re co
