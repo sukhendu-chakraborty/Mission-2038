@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { Activity, Zap, Target, RefreshCw } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import MorphMatrix from './MorphMatrix';
+import PerformanceGraph from './PerformanceGraph';
 import './Dashboard.css';
 
 export default function Dashboard({ data, onReset }) {
@@ -113,6 +115,12 @@ export default function Dashboard({ data, onReset }) {
           ))}
         </div>
       </motion.div>
+
+      {/* MORPH MATRIX VISUALIZATION */}
+      <MorphMatrix stats={stats} report={report} />
+
+      {/* PERFORMANCE PROGRESSION GRAPH */}
+      <PerformanceGraph stats={stats} sessionLog={session_log} sessionData={session_data} />
     </motion.div>
   );
 }

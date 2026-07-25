@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Play, Video, Loader, Cpu, BarChart2, ShieldAlert, CheckCircle2, Eye, Activity, AlertTriangle, XCircle, Trash2 } from "lucide-react";
+import MorphMatrix from "@/components/MorphMatrix";
+import PerformanceGraph from "@/components/PerformanceGraph";
 
 export default function AICoachTerminal() {
   const [videos, setVideos] = useState([]);
@@ -596,6 +598,21 @@ export default function AICoachTerminal() {
                         {analysisResult.report}
                       </div>
                     </div>
+
+                    {/* MORPH MATRIX VISUALIZATION */}
+                    <MorphMatrix 
+                      stats={analysisResult.stats} 
+                      report={analysisResult.report} 
+                      drillType={selectedVideo?.drillType || "Shooting"} 
+                    />
+
+                    {/* PERFORMANCE PROGRESSION GRAPH */}
+                    <PerformanceGraph 
+                      stats={analysisResult.stats} 
+                      sessionLog={analysisResult.session_log} 
+                      sessionData={analysisResult.session_data} 
+                      drillType={selectedVideo?.drillType || "Shooting"} 
+                    />
                   </>
                 )}
               </div>
