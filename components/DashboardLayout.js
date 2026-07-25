@@ -40,6 +40,22 @@ export default function DashboardLayout({ children }) {
       const rawUserId = parsedUser.id || parsedUser._id || parsedUser.userId || (parsedUser.user ? parsedUser.user.id || parsedUser.user._id : null);
       const cleanUserId = typeof rawUserId === "object" ? (rawUserId._id || rawUserId.id)?.toString() : rawUserId?.toString();
 
+      const syncProfile = () => {
+        api.get("/dashboard/profile")
+          .then(res => {
+            const freshProfile = res?.profile || res;
+            if (freshProfile && (freshProfile.name || freshProfile.profilePhoto)) {
+              setCurrentProfile(freshProfile);
+              localStorage.setItem("profile", JSON.stringify(freshProfile));
+            }
+          })
+          .catch(err => console.error("Profile auto-sync notice:", err));
+      };
+
+      // 0. Auto-sync user profile to update name & profilePhoto
+      syncProfile();
+      window.addEventListener("profile-updated", syncProfile);
+
       // 1. Initial Notification Load
       const loadNotifications = () => {
         api.get("/social/notifications")
@@ -197,8 +213,8 @@ export default function DashboardLayout({ children }) {
             <h4 className="text-sm font-bold text-white truncate">
               {currentProfile?.name || currentUser.email.split('@')[0]}
             </h4>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-yellow-400/90 block">
-              {currentUser.role} {currentProfile?.verifiedBadge && "✓"}
+            <span className="text-[10px] uppercase font-bold tracking-wider text-yellow-400/90 block truncate">
+              {currentProfile?.currentClub || currentUser?.role} {currentProfile?.verifiedBadge && "✓"}
             </span>
           </div>
         </div>

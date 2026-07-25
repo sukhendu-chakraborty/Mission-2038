@@ -148,7 +148,7 @@ export default function PlayerDashboard() {
                   </span>
                 </div>
                 <p className="text-[10px] text-zinc-400">
-                  {profile?.currentClub || 'FC Barcelona'} • Overall Score: <strong className="text-yellow-400 font-bold">{rankInfo?.myData ? rankInfo.myData.overallScore : (profile?.skills?.scoutRatingsCount > 0 ? (profile?.skills?.scoutScore || 0) : 0)}/99</strong>
+                  {profile?.currentClub || 'FC Barcelona'} • Overall Score: <strong className="text-yellow-400 font-bold">{rankInfo?.myData ? rankInfo.myData.overallScore : (profile?.skills?.scoutRatingsCount > 0 ? (profile?.skills?.scoutScore || 0) : 0)}</strong>
                 </p>
                 <div className="flex items-center gap-1.5 text-[9px] text-green-400 font-semibold pt-0.5">
                   <span className="text-amber-400">🔥</span>

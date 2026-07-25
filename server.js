@@ -70,10 +70,75 @@ const io = new Server(server, {
 
 app.set('io', io);
 
+const { Chat, Message, Notification, Profile } = require('./api/models');
+
 io.on('connection', (socket) => {
   socket.on('join', (userId) => {
-    if (userId) {
-      socket.join(`user_${userId}`);
+    if (userId) socket.join(`user_${userId}`);
+  });
+
+  socket.on('join_user', (userId) => {
+    if (userId) socket.join(`user_${userId}`);
+  });
+
+  socket.on('join_chat', (chatId) => {
+    if (chatId) socket.join(`chat_${chatId}`);
+  });
+
+  socket.on('send_message', async (data) => {
+    const { chatId, senderId, text, mediaUrl, mediaType } = data || {};
+    if (!chatId || !senderId) return;
+
+    try {
+      const message = new Message({
+        chat: chatId,
+        sender: senderId,
+        text: text || '',
+        mediaUrl: mediaUrl || '',
+        mediaType: mediaType || undefined
+      });
+      await message.save();
+
+      const chat = await Chat.findById(chatId);
+      if (chat) {
+        let snippet = text || (mediaType === 'video' ? '📹 Video Attachment' : '📷 Image Attachment');
+        chat.lastMessage = snippet;
+        chat.lastMessageAt = new Date();
+        await chat.save();
+
+        const receiverId = chat.participants.find(p => p.toString() !== senderId.toString());
+        if (receiverId) {
+          const senderProfile = await Profile.findOne({ user: senderId });
+          const notif = new Notification({
+            user: receiverId,
+            type: 'message',
+            title: `💬 New message from ${senderProfile?.name || 'Someone'}`,
+            message: snippet,
+            data: { chatId: chat._id }
+          });
+          await notif.save();
+
+          io.to(`user_${receiverId.toString()}`).emit('notification:new', notif);
+          io.to(`user_${receiverId.toString()}`).emit('chat_list_update', { chatId: chat._id });
+        }
+      }
+
+      io.to(`chat_${chatId}`).emit('receive_message', message);
+    } catch (err) {
+      console.error('[Socket.io send_message Error]:', err.message);
+    }
+  });
+
+  socket.on('typing', (data) => {
+    if (data && data.chatId) {
+      socket.to(`chat_${data.chatId}`).emit('typing_status', data);
+    }
+  });
+
+  socket.on('mark_seen', async (data) => {
+    if (data && data.chatId) {
+      await Message.updateMany({ chat: data.chatId, sender: { $ne: data.userId } }, { seen: true });
+      io.to(`chat_${data.chatId}`).emit('marked_seen_status', { chatId: data.chatId });
     }
   });
 });

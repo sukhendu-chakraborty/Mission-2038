@@ -104,7 +104,7 @@ export default function GlobalLeaderboard() {
                     {myData.preferredPosition}
                   </span>
                 </div>
-                <p className="text-[10px] text-zinc-400">{myData.currentClub} • Overall Score: <strong className="text-yellow-400 font-bold">{myData.overallScore}/99</strong></p>
+                <p className="text-[10px] text-zinc-400">{myData.currentClub} • Overall Score: <strong className="text-yellow-400 font-bold">{myData.overallScore}</strong></p>
                 <div className="flex items-center gap-1.5 text-[9px] text-green-400 font-semibold pt-0.5">
                   <Flame className="w-3 h-3 text-amber-400 animate-bounce" />
                   <span>Top {Math.max(1, Math.round(((myRank || 1) / (totalPlayers || 1)) * 100))}% Global Standing</span>

@@ -182,9 +182,13 @@ export default function PlayerSettings() {
       const res = await api.put("/dashboard/profile", payload);
       setSuccess(true);
 
-      // Update local cache
-      if (res && res.profile) {
-        localStorage.setItem("profile", JSON.stringify(res.profile));
+      // Update local cache & notify layout
+      if (res && (res.profile || res)) {
+        const pObj = res.profile || res;
+        localStorage.setItem("profile", JSON.stringify(pObj));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("profile-updated"));
+        }
       }
     } catch (err) {
       setError(err.message || "Failed to save profile changes.");

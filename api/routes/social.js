@@ -214,12 +214,19 @@ router.get('/chats', authenticateToken, async (req, res) => {
       const otherUser = await User.findById(otherParticipantId).select('email role');
       const otherProfile = await Profile.findOne({ user: otherParticipantId });
       
+      const unreadCount = await Message.countDocuments({
+        chat: chat._id,
+        sender: { $ne: req.user.userId },
+        seen: { $ne: true }
+      });
+
       populatedChats.push({
         _id: chat._id,
         lastMessage: chat.lastMessage,
         lastMessageAt: chat.lastMessageAt,
         otherUser,
-        otherProfile
+        otherProfile,
+        unreadCount
       });
     }
 
@@ -292,6 +299,146 @@ router.post('/notifications/:id/read', authenticateToken, async (req, res) => {
     notification.read = true;
     await notification.save();
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 12. UPLOAD CHAT MEDIA (IMAGE / VIDEO)
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const mediaStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../public/uploads/chat');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || (file.mimetype.includes('video') ? '.mp4' : '.jpg');
+    cb(null, `chat_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`);
+  }
+});
+
+const mediaUpload = multer({
+  storage: mediaStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }
+});
+
+router.post('/upload-media', authenticateToken, mediaUpload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No media file provided.' });
+    }
+    const serverPort = process.env.PORT || 5000;
+    const mediaUrl = `http://localhost:${serverPort}/uploads/chat/${req.file.filename}`;
+    const isVideo = req.file.mimetype.startsWith('video/');
+    res.json({
+      mediaUrl,
+      mediaType: isVideo ? 'video' : 'image'
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to upload chat media: ' + err.message });
+  }
+});
+
+// 13. SEARCH USERS FOR DISCOVERY (PLAYERS, SCOUTS, COACHES)
+router.get('/users/search', authenticateToken, async (req, res) => {
+  try {
+    const currentUserId = req.user.userId;
+    const { q = '', role } = req.query;
+
+    const userFilter = { _id: { $ne: currentUserId } };
+    if (role && role !== 'all') {
+      userFilter.role = role;
+    }
+
+    const users = await User.find(userFilter).select('email role _id');
+    const userIds = users.map(u => u._id);
+
+    let profileFilter = { user: { $in: userIds } };
+    if (q.trim()) {
+      profileFilter.$or = [
+        { name: { $regex: q.trim(), $options: 'i' } },
+        { preferredPosition: { $regex: q.trim(), $options: 'i' } },
+        { city: { $regex: q.trim(), $options: 'i' } },
+        { clubRepresenting: { $regex: q.trim(), $options: 'i' } }
+      ];
+    }
+
+    const profiles = await Profile.find(profileFilter).populate('user', 'email role _id');
+
+    const result = profiles.map(p => ({
+      userId: p.user._id,
+      email: p.user.email,
+      role: p.user.role,
+      name: p.name,
+      preferredPosition: p.preferredPosition || '',
+      ageCategory: p.ageCategory || '',
+      profilePhoto: p.profilePhoto || '',
+      city: p.city || '',
+      state: p.state || ''
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 14. SEND MESSAGE VIA POST HTTP (WITH TEXT, IMAGE, OR VIDEO)
+router.post('/chats/:chatId/messages', authenticateToken, async (req, res) => {
+  try {
+    const { text = '', mediaUrl, mediaType } = req.body;
+    const chatId = req.params.chatId;
+
+    const chat = await Chat.findOne({
+      _id: chatId,
+      participants: req.user.userId
+    });
+
+    if (!chat) {
+      return res.status(403).json({ error: 'Unauthorized chat access.' });
+    }
+
+    const message = new Message({
+      chat: chatId,
+      sender: req.user.userId,
+      text,
+      mediaUrl: mediaUrl || '',
+      mediaType: mediaType || undefined
+    });
+    await message.save();
+
+    let snippet = text || (mediaType === 'video' ? '📹 Video Attachment' : '📷 Image Attachment');
+    chat.lastMessage = snippet;
+    chat.lastMessageAt = new Date();
+    await chat.save();
+
+    const receiverId = chat.participants.find(p => p.toString() !== req.user.userId.toString());
+    if (receiverId) {
+      const senderProfile = await Profile.findOne({ user: req.user.userId });
+      const notif = new Notification({
+        user: receiverId,
+        type: 'message',
+        title: `💬 New message from ${senderProfile?.name || 'Someone'}`,
+        message: snippet,
+        data: { chatId: chat._id }
+      });
+      await notif.save();
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`chat_${chat._id}`).emit('receive_message', message);
+        io.to(`user_${receiverId.toString()}`).emit('notification:new', notif);
+        io.to(`user_${receiverId.toString()}`).emit('chat_list_update', { chatId: chat._id });
+      }
+    }
+
+    res.status(201).json(message);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
