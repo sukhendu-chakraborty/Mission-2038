@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { FiVolume2, FiVolumeX } from "react-icons/fi";
 import { HiMenuAlt4 } from "react-icons/hi";
-import { IoFootballOutline } from "react-icons/io5";
+import Image from "next/image";
 
 const Navbar = () => {
     const router = useRouter();
@@ -116,8 +116,8 @@ const Navbar = () => {
                     
                     {/* ===== LEFT LOGO SECTION ===== */}
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center text-white text-4xl drop-shadow-md">
-                            <IoFootballOutline />
+                        <div className="flex items-center justify-center drop-shadow-md">
+                            <Image src="/logo.png" alt="Mission 2K38" width={48} height={48} className="object-contain" />
                         </div>
                         <div className="flex flex-col text-white text-[10px] uppercase leading-tight drop-shadow-md">
                             <span className="font-medium tracking-widest opacity-80">presented by</span>
@@ -176,10 +176,10 @@ const Navbar = () => {
 
                 {/* Menu Links */}
                 <div className="flex h-full flex-col justify-center gap-2 pt-10">
-                    {["Fixtures", "Teams", "Pricing", "Tickets", "Contact"].map((item, idx) => (
+                    {["About", "History", "Pricing", "Login"].map((item, idx) => (
                         <a
                             key={idx}
-                            href={`#${item.toLowerCase()}`}
+                            href={item === "Login" ? "/login" : `#${item.toLowerCase()}`}
                             onClick={() => setIsMenuOpen(false)}
                             className="menu-item text-6xl font-serif uppercase tracking-tighter text-black transition-transform hover:translate-x-4 md:text-[8rem] lg:text-[10rem] xl:text-[11rem] leading-[0.85]"
                         >

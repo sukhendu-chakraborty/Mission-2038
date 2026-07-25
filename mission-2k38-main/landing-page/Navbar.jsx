@@ -176,10 +176,10 @@ const Navbar = () => {
 
                 {/* Menu Links */}
                 <div className="flex h-full flex-col justify-center gap-2 pt-10">
-                    {["Fixtures", "Teams", "Tickets", "Contact"].map((item, idx) => (
+                    {["About", "History", "Pricing", "Login"].map((item, idx) => (
                         <a
                             key={idx}
-                            href={`#${item.toLowerCase()}`}
+                            href={item === "Login" ? "/login" : `#${item.toLowerCase()}`}
                             onClick={() => setIsMenuOpen(false)}
                             className="menu-item text-6xl font-serif uppercase tracking-tighter text-black transition-transform hover:translate-x-4 md:text-[8rem] lg:text-[10rem] xl:text-[11rem] leading-[0.85]"
                         >
