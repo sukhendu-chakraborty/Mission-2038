@@ -151,7 +151,7 @@ async def generate_coaching(req: CoachRequest):
     if client:
         try:
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-flash-latest',
                 contents=prompt
             )
             return {"coaching": response.text}
@@ -181,7 +181,7 @@ async def predict_potential(req: PredictRequest):
     if client:
         try:
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-flash-latest',
                 contents=prompt
             )
             return {"prediction": response.text}

@@ -52,9 +52,15 @@ def sse_generator(coach_generator, temp_path):
                     b64 = base64.b64encode(buffer).decode('utf-8')
                     payload = json.dumps({"type": "frame", "data": b64})
                     yield f"data: {payload}\n\n"
+            elif item["type"] == "log":
+                payload = json.dumps({"type": "log", "data": item["data"]})
+                yield f"data: {payload}\n\n"
             elif item["type"] == "result":
                 payload = json.dumps({"type": "result", "data": item["data"]})
                 yield f"data: {payload}\n\n"
+    except Exception as e:
+        error_payload = json.dumps({"type": "log", "data": f"Error during processing: {str(e)}"})
+        yield f"data: {error_payload}\n\n"
     finally:
         if os.path.exists(temp_path):
             try:
